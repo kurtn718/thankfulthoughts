@@ -1,9 +1,7 @@
 import { UserProfile } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
-export default function ProfilePage() {
-  return (
-    <div>
-      {/* Your profile page content */}
-    </div>
-  );
-} 
+const UserProfilePage = () => {
+  return <UserProfile routing='hash' />;
+};
+export default UserProfilePage;

@@ -2,11 +2,11 @@ import Link from 'next/link';
 
 const links = [
   {
-    name: 'chat',
+    name: 'Chat',
     href: '/chat',
   }, 
   {
-    name: 'profile',
+    name: 'Profile',
     href: '/profile',
   },
 ];
