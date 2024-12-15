@@ -1,4 +1,4 @@
-mport Link from 'next/link';
+import Link from 'next/link';
 const ProfilePage = () => {
   return (
     <h1>Profile Page</h1>
