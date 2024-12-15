@@ -1,10 +1,9 @@
 import { SignUp } from '@clerk/nextjs';
 
-const SignUpPage = () => {
+export default function SignUpPage() {
   return (
     <div className='min-h-screen flex justify-center items-center'>
-      <SignUp />
+      <SignUp routing="path" />
     </div>
   );
-};
-export default SignUpPage;
+}
