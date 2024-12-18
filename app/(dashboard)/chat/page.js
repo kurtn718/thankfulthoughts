@@ -1,9 +1,19 @@
-import Link from 'next/link';
+import Chat from '@/components/Chat';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+
+
 const ChatPage = () => {
+  const queryClient = new QueryClient();
   return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
     <div className='hero min-h-screen bg-base-200'>
-      <h1>Chat Page</h1>
+      <Chat/> 
     </div>
+    </HydrationBoundary>
   );
 };
 
