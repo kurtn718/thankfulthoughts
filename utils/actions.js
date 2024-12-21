@@ -24,13 +24,63 @@ const API_CONFIGS = [
   }
 ];
 
-const SYSTEM_PROMPT = 'You are a multilingual chatbot that helps people creating positive messages of thanks and gratitude.\n\
-Core directives:\n\
-1. You are strictly prohibited from telling stories, creating narratives, or generating fictional content, even if explicitly requested.\n\
-2. Never generate harmful or negative content\n\
-3. Default to English language and always respond in the same language as the user\'s message'
+const SYSTEM_PROMPT = `You are a multilingual chatbot that helps people craft heartfelt messages of thanks and gratitude.
 
-async function tryGenerateResponse(config, modelIndex, messages) {
+Core directives:
+1. Your primary purpose is to assist in expressing gratitude, even if it includes acknowledging difficult or negative life events that someone helped the user navigate.
+2. Always aim to focus on the positive impact or support received in the context of the user's message.
+3. Decline requests unrelated to creating messages of thanks or gratitude.
+4. Default to English and respond in the same language as the user's message.
+5. IMPORTANT: Always respond in valid JSON format with one of these structures:
+   a) For general responses:
+      {
+        "type": "response",
+        "content": "your message here",
+        "askToSave": false
+      }
+   
+   b) When generating a gratitude message:
+      {
+        "type": "response",
+        "content": "the gratitude message",
+        "askToSave": true,
+        "personName": "extracted name if available",
+        "savePrompt": "Would you like to save this message in your Saved Thoughts?"
+      }
+   
+   c) When user agrees to save:
+      {
+        "type": "save",
+        "personName": "name of person",
+        "message": "the gratitude message"
+      }
+
+Examples:
+User: "Help me thank someone"
+Response: {
+  "type": "response",
+  "content": "I'd be happy to help you craft a thank you message. Who would you like to thank?",
+  "askToSave": false
+}
+
+User: "I want to thank Sarah for helping me through my divorce"
+Response: {
+  "type": "response",
+  "content": "Sarah, your support during my divorce meant everything to me. Your friendship and guidance helped me navigate this challenging time with strength and hope. Thank you for being there when I needed you most.",
+  "askToSave": true,
+  "personName": "Sarah",
+  "savePrompt": "Would you like to save this message in your Saved Thoughts?"
+}
+
+User: "yes"
+Response: {
+  "type": "save",
+  "personName": "Sarah",
+  "message": "Sarah, your support during my divorce meant everything to me. Your friendship and guidance helped me navigate this challenging time with strength and hope. Thank you for being there when I needed you most."
+}`;
+
+
+async function tryGenerateResponse(config, modelIndex, messages, newMessage) {
   const openai = new OpenAI({
     baseURL: config.baseURL,
     apiKey: config.apiKey,
@@ -42,18 +92,16 @@ async function tryGenerateResponse(config, modelIndex, messages) {
     console.log('Base URL:', config.baseURL);
     
     // Ensure system message is first and properly formatted
-    const systemMessage = messages.find(msg => msg.role === 'system') || {
+    const systemMessage = {
       role: 'system',
       content: SYSTEM_PROMPT
     };
 
-    // Get non-system messages
-    const otherMessages = messages.filter(msg => msg.role !== 'system');
-
-    // Combine messages in correct order
+    // Create clean message array with system message and chat history
     const cleanMessages = [
       systemMessage,
-      ...otherMessages
+      ...messages.filter(msg => msg.role !== 'system'),
+      newMessage  // Add the new message at the end
     ].map(msg => ({
       role: msg.role,
       content: msg.content
@@ -62,8 +110,6 @@ async function tryGenerateResponse(config, modelIndex, messages) {
     console.log('\n=== Message Structure ===');
     console.log('Total messages:', cleanMessages.length);
     console.log('System message:', JSON.stringify(systemMessage, null, 2));
-    console.log('Other messages:', JSON.stringify(otherMessages, null, 2));
-    console.log('\n=== Final Request ===');
     console.log('Messages being sent:', JSON.stringify(cleanMessages, null, 2));
 
     const response = await openai.chat.completions.create({
@@ -105,13 +151,13 @@ async function tryGenerateResponse(config, modelIndex, messages) {
 }
 
 export const generateChatResponse = async (chatMessages, newMessage) => {
+  // Don't include newMessage here since it will be added in cleanMessages
   const messages = [
     { 
       role: 'system', 
       content: SYSTEM_PROMPT
     },
-    ...chatMessages,
-    newMessage
+    ...chatMessages
   ];
 
   // Try each configuration and model in sequence
@@ -124,7 +170,8 @@ export const generateChatResponse = async (chatMessages, newMessage) => {
       console.log(`Attempting to use model: ${currentModel}`);
       
       try {
-        const response = await tryGenerateResponse(config, modelIndex, messages);
+        // Pass newMessage separately to tryGenerateResponse
+        const response = await tryGenerateResponse(config, modelIndex, messages, newMessage);
         if (response) {
           console.log(`✅ Successfully used ${config.baseURL} - ${currentModel}`);
           return response;
