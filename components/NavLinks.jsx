@@ -2,9 +2,13 @@ import Link from 'next/link';
 
 const links = [
   {
-    name: 'Chat',
-    href: '/chat',
+    name: 'Create Thought',
+    href: '/createthought',
   }, 
+  {
+    name: 'Saved Thoughts',
+    href: '/savedthoughts',
+  },
   {
     name: 'Profile',
     href: '/profile',

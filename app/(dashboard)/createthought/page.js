@@ -1,4 +1,5 @@
-import Chat from '@/components/Chat';
+import CreateThought from '@/components/CreateThought';
+
 import {
   dehydrate,
   HydrationBoundary,
@@ -6,15 +7,15 @@ import {
 } from '@tanstack/react-query';
 
 
-const ChatPage = () => {
+const CreateThoughtPage = () => {
   const queryClient = new QueryClient();
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
     <div className='hero min-h-screen bg-base-200'>
-      <Chat/> 
+      <CreateThought/> 
     </div>
     </HydrationBoundary>
   );
 };
 
-export default ChatPage;
+export default CreateThoughtPage;
