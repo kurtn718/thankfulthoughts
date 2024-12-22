@@ -9,7 +9,7 @@ const HomePage = () => {
             Thankful Thoughts is an AI-powered app that helps you express
             gratitude and improve your mental health.
           </p>
-          <Link href='/chat' className='btn btn-secondary '>
+          <Link href='/createthought' className='btn btn-secondary '>
             Get Started
           </Link>
         </div>
