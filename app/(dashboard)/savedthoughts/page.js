@@ -12,7 +12,8 @@ export default function SavedThoughtsPage() {
           Coming Soon!
         </h1>
         <p className="text-xl mb-6 text-base-content/80">
-          We're working hard to bring you a beautiful space to store and revisit your thankful thoughts.
+        Don't worry!  If you have saved any thoughts we do have them saved.<br/>  
+        We're working hard to bring you a beautiful space to store and revisit your thankful thoughts.
         </p>
         <div className="flex items-center justify-center gap-2 text-lg text-primary">
           <IoCalendarOutline className="text-2xl" />
