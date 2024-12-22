@@ -52,11 +52,14 @@ const CreateThought = () => {
     mutationFn: (query) => generateChatResponse(messages, query),
     onSuccess: (data) => {
       if (!data) {
+        console.error('No data returned from mutation');
         toast.error('Something went wrong');
         return;
       }
       try {
+        console.log('Raw LLM response:', data);
         const jsonResponse = JSON.parse(data.content);
+        console.log('Parsed JSON response:', jsonResponse);
         
         // Add the response to messages
         setMessages(prev => [...prev, { 
@@ -66,51 +69,98 @@ const CreateThought = () => {
 
         // If this is a message that can be saved, store the context and add save prompt
         if (jsonResponse.askToSave) {
+          console.log('Save prompt triggered:', {
+            personName: jsonResponse.personName,
+            messageLength: jsonResponse.content?.length,
+            savePrompt: jsonResponse.savePrompt
+          });
+
           setCurrentContext({
             personName: jsonResponse.personName,
             message: jsonResponse.content
           });
           
-          // Add save prompt as a new message
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: jsonResponse.savePrompt,
-            isSavePrompt: true, // Flag to style differently if needed
-            onSave: handleSave
-          }]);
+          // Add save prompt as a new message - without passing the function
+          setMessages(prev => {
+            console.log('Adding save prompt to messages');
+            return [...prev, {
+              role: 'assistant',
+              content: jsonResponse.savePrompt || 'Would you like to save this message?',
+              isSavePrompt: true
+            }];
+          });
+        } else {
+          console.log('Message not marked for saving');
         }
       } catch (error) {
-        console.error('Failed to parse JSON response:', error);
+        console.error('Failed to parse or handle JSON response:', {
+          error: error.message,
+          data: data,
+          content: data?.content
+        });
         setMessages(prev => [...prev, data]);
       }
     },
     onError: (error) => {
+      console.error('Mutation error:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause,
+        // For server errors that might be wrapped
+        serverError: error.serverError,
+        response: error.response?.data,
+      });
       setMessages((prev) => prev.slice(0, -1));
-      toast.error('Something went wrong, please try again');
+      toast.error(`Error: ${error.message || 'Something went wrong, please try again'}`);
     }
   });
 
   const handleSave = async () => {
-    if (!currentContext || !user) return;
+    if (!currentContext || !user) {
+      console.log('Save attempted without context or user:', { 
+        hasContext: !!currentContext, 
+        hasUser: !!user 
+      });
+      return;
+    }
     
     try {
+      console.log('Attempting to save with:', {
+        userId: user.id,
+        personName: currentContext.personName,
+        messageLength: currentContext.message?.length,
+        userEmail: user.emailAddresses[0]?.emailAddress
+      });
+
       const result = await saveThought({
         userId: user.id,
         personName: currentContext.personName,
-        message: currentContext.message
+        message: currentContext.message,
+        userDetails: {
+          email: user.emailAddresses[0]?.emailAddress,
+          firstName: user.firstName,
+          lastName: user.lastName
+        }
       });
+
+      console.log('Save result:', result);
 
       if (result.success) {
         toast.success('Thought saved successfully!');
         setCurrentContext(null);
-        // Remove the save prompt message
         setMessages(prev => prev.slice(0, -1));
       } else {
-        throw new Error(result.error);
+        console.error('Save failed with:', result);
+        throw new Error(result.details || result.error);
       }
     } catch (error) {
-      toast.error('Failed to save thought');
-      console.error('Save error:', error);
+      console.error('Save error:', {
+        message: error.message,
+        cause: error.cause,
+        stack: error.stack
+      });
+      toast.error(`Failed to save thought: ${error.message}`);
     }
   };
 
@@ -128,7 +178,7 @@ const CreateThought = () => {
   return (
     <div className='min-h-[calc(100vh-6rem)] grid grid-rows-[auto,1fr,auto] gap-4 pb-8'>
       <div>
-        {messages.map(({ role, content, isSavePrompt, onSave }, index) => {
+        {messages.map(({ role, content, isSavePrompt }, index) => {
           const avatar = role == 'user' ? '👤' : '🤖';
           const bcg = role == 'user' ? 'bg-base-200' : 'bg-base-100';
           return (
@@ -142,7 +192,7 @@ const CreateThought = () => {
                 {isSavePrompt && (
                   <div className="mt-4 flex gap-2">
                     <button 
-                      onClick={onSave}
+                      onClick={handleSave}
                       className="btn btn-primary btn-sm"
                     >
                       Yes, save this message

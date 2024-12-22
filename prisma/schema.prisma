@@ -1,0 +1,38 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  clerkId       String         @unique
+  email         String         @unique
+  firstName     String?
+  lastName      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  savedThoughts SavedThought[]
+
+  @@map("users")
+}
+
+model SavedThought {
+  id          String   @id @default(uuid())
+  personName  String
+  message     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isArchived  Boolean  @default(false)
+  tags        String[] @default([])
+
+  @@index([userId])
+  @@map("saved_thoughts")
+} 

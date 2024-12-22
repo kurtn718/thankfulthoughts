@@ -31,52 +31,29 @@ Core directives:
 2. Always aim to focus on the positive impact or support received in the context of the user's message.
 3. Decline requests unrelated to creating messages of thanks or gratitude.
 4. Default to English and respond in the same language as the user's message.
-5. IMPORTANT: Always respond in valid JSON format with one of these structures:
-   a) For general responses:
-      {
-        "type": "response",
-        "content": "your message here",
-        "askToSave": false
-      }
-   
-   b) When generating a gratitude message:
-      {
-        "type": "response",
-        "content": "the gratitude message",
-        "askToSave": true,
-        "personName": "extracted name if available",
-        "savePrompt": "Would you like to save this message in your Saved Thoughts?"
-      }
-   
-   c) When user agrees to save:
-      {
-        "type": "save",
-        "personName": "name of person",
-        "message": "the gratitude message"
-      }
+5. IMPORTANT: Always respond in valid JSON format with this structure:
+   {
+     "type": "response",
+     "content": "your message here",
+     "askToSave": boolean,
+     "personName": "name if detected",
+     "savePrompt": "save prompt if askToSave is true"
+   }
 
-Examples:
-User: "Help me thank someone"
-Response: {
+Example response when user provides a name:
+{
+  "type": "response",
+  "content": "Dear Sarah, thank you for your unwavering support...",
+  "askToSave": true,
+  "personName": "Sarah",
+  "savePrompt": "Would you like to save this thank you message for Sarah?"
+}
+
+Example response for general query:
+{
   "type": "response",
   "content": "I'd be happy to help you craft a thank you message. Who would you like to thank?",
   "askToSave": false
-}
-
-User: "I want to thank Sarah for helping me through my divorce"
-Response: {
-  "type": "response",
-  "content": "Sarah, your support during my divorce meant everything to me. Your friendship and guidance helped me navigate this challenging time with strength and hope. Thank you for being there when I needed you most.",
-  "askToSave": true,
-  "personName": "Sarah",
-  "savePrompt": "Would you like to save this message in your Saved Thoughts?"
-}
-
-User: "yes"
-Response: {
-  "type": "save",
-  "personName": "Sarah",
-  "message": "Sarah, your support during my divorce meant everything to me. Your friendship and guidance helped me navigate this challenging time with strength and hope. Thank you for being there when I needed you most."
 }`;
 
 
@@ -151,44 +128,67 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage) {
 }
 
 export const generateChatResponse = async (chatMessages, newMessage) => {
-  // Don't include newMessage here since it will be added in cleanMessages
-  const messages = [
-    { 
-      role: 'system', 
-      content: SYSTEM_PROMPT
-    },
-    ...chatMessages
-  ];
+  try {
+    // Don't include newMessage here since it will be added in cleanMessages
+    const messages = [
+      { 
+        role: 'system', 
+        content: SYSTEM_PROMPT
+      },
+      ...chatMessages
+    ];
 
-  // Try each configuration and model in sequence
-  for (const config of API_CONFIGS) {
-    console.log(`Trying config with baseURL: ${config.baseURL}`);
-    console.log(`Available models:`, config.models);
-    
-    for (let modelIndex = 0; modelIndex < config.models.length; modelIndex++) {
-      const currentModel = config.models[modelIndex];
-      console.log(`Attempting to use model: ${currentModel}`);
+    // Try each configuration and model in sequence
+    for (const config of API_CONFIGS) {
+      console.log(`Trying config with baseURL: ${config.baseURL}`);
+      console.log(`Available models:`, config.models);
       
-      try {
-        // Pass newMessage separately to tryGenerateResponse
-        const response = await tryGenerateResponse(config, modelIndex, messages, newMessage);
-        if (response) {
-          console.log(`✅ Successfully used ${config.baseURL} - ${currentModel}`);
-          return response;
-        } else {
-          console.log(`❌ No response from ${currentModel}`);
+      for (let modelIndex = 0; modelIndex < config.models.length; modelIndex++) {
+        const currentModel = config.models[modelIndex];
+        console.log(`Attempting to use model: ${currentModel}`);
+        
+        try {
+          // Pass newMessage separately to tryGenerateResponse
+          const response = await tryGenerateResponse(config, modelIndex, messages, newMessage);
+          if (response) {
+            console.log(`✅ Successfully used ${config.baseURL} - ${currentModel}`);
+            return response;
+          } else {
+            console.log(`❌ No response from ${currentModel}`);
+          }
+        } catch (error) {
+          console.log(`❌ Failed with ${currentModel}:`, error.message);
+          continue; // Try next model
         }
-      } catch (error) {
-        console.log(`❌ Failed with ${currentModel}:`, error.message);
-        continue; // Try next model
       }
     }
-  }
 
-  // If all attempts fail
-  console.log('❌ All LLM attempts failed');
-  return {
-    role: 'assistant',
-    content: 'I apologize, but I am currently experiencing technical difficulties. Please try again in a moment.'
-  };
+    // If all attempts fail
+    console.log('❌ All LLM attempts failed');
+    const error = new Error('Failed to generate response after all attempts');
+    error.code = 'ALL_ATTEMPTS_FAILED';
+    error.attempts = API_CONFIGS.map(c => c.models).flat().length;
+    throw error;
+  } catch (error) {
+    console.error('Generate chat response error:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      attempts: error.attempts,
+    });
+    
+    // Return error in a format that will be useful client-side
+    return {
+      role: 'assistant',
+      content: JSON.stringify({
+        type: 'error',
+        content: 'I apologize, but I am currently experiencing technical difficulties. Please try again in a moment.',
+        error: {
+          message: error.message,
+          code: error.code
+        }
+      })
+    };
+  }
 };
