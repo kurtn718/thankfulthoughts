@@ -3,8 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useMutation } from '@tanstack/react-query';
 import { generateChatResponse } from '@/utils/actions';
+import { saveThought } from '@/utils/db-utils';
+import { useUser } from '@clerk/nextjs';
 
 const CreateThought = () => {
+  const { user } = useUser();
   const [text, setText] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoadingWelcome, setIsLoadingWelcome] = useState(true);
@@ -88,15 +91,26 @@ const CreateThought = () => {
   });
 
   const handleSave = async () => {
-    if (!currentContext) return;
+    if (!currentContext || !user) return;
     
     try {
-      // Here you would typically save to your database
-      console.log('Saving message:', currentContext);
-      toast.success('Message saved to your Thoughts!');
-      setCurrentContext(null);
+      const result = await saveThought({
+        userId: user.id,
+        personName: currentContext.personName,
+        message: currentContext.message
+      });
+
+      if (result.success) {
+        toast.success('Thought saved successfully!');
+        setCurrentContext(null);
+        // Remove the save prompt message
+        setMessages(prev => prev.slice(0, -1));
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
-      toast.error('Failed to save message');
+      toast.error('Failed to save thought');
+      console.error('Save error:', error);
     }
   };
 
