@@ -1,48 +1,266 @@
-import { FaTools } from 'react-icons/fa';
-import { IoCalendarOutline } from 'react-icons/io5';
+'use client';
+
+import { useUser } from '@clerk/nextjs';
+import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import debounce from 'lodash/debounce';
 
 export default function SavedThoughtsPage() {
-  return (
-    <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center">
-      <div className="text-center p-8 max-w-2xl mx-auto">
-        <div className="flex justify-center mb-6">
-          <FaTools className="text-6xl text-primary animate-pulse" />
-        </div>
-        <h1 className="text-4xl font-bold mb-4">
-          Coming Soon!
-        </h1>
-        <p className="text-xl mb-6 text-base-content/80">
-        Don't worry!  If you have saved any thoughts we do have them saved.<br/>  
-        We're working hard to bring you a beautiful space to store and revisit your thankful thoughts.
-        </p>
-        <div className="flex items-center justify-center gap-2 text-lg text-primary">
-          <IoCalendarOutline className="text-2xl" />
-          <span>Estimated launch: January 1st, 2025</span>
-        </div>
-        <div className="mt-8 p-6 bg-base-200 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">
-            What to expect:
-          </h2>
-          <ul className="text-left space-y-3">
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Browse and search through all your saved messages of gratitude</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Organize thoughts with tags and categories</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Share your thoughts with others (optional)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Get reminders to express gratitude regularly</span>
-            </li>
-          </ul>
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [state, setState] = useState({
+    thoughts: [],
+    loading: true,
+    error: null,
+    pagination: {
+      total: 0,
+      pages: 0,
+      currentPage: 1,
+      limit: 9
+    }
+  });
+
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+
+  const fetchThoughts = useCallback(async (page = 1, search = '') => {
+    if (!user) return;
+
+    try {
+      setState(prev => ({ ...prev, loading: true }));
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: state.pagination.limit.toString(),
+        ...(search && { search })
+      });
+
+      const response = await fetch(`/api/savedthoughts?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        setState(prev => ({
+          ...prev,
+          error: result.error,
+          loading: false
+        }));
+        return;
+      }
+
+      setState(prev => ({
+        ...prev,
+        thoughts: result.data,
+        pagination: result.pagination,
+        loading: false,
+        error: null
+      }));
+
+    } catch (error) {
+      console.error('Failed to fetch thoughts:', error);
+      setState(prev => ({
+        ...prev,
+        error: 'Failed to load thoughts',
+        loading: false
+      }));
+    }
+  }, [user, state.pagination.limit]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((search) => {
+      const newParams = new URLSearchParams(searchParams);
+      if (search) {
+        newParams.set('search', search);
+      } else {
+        newParams.delete('search');
+      }
+      router.replace(`/savedthoughts?${newParams.toString()}`, { scroll: false });
+      fetchThoughts(1, search);
+    }, 300),
+    [fetchThoughts, router, searchParams]
+  );
+
+  // Handle search input
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    debouncedSearch(value);
+  };
+
+  // Handle deletion
+  const handleDelete = async (thoughtId) => {
+    if (!confirm('Are you sure you want to delete this thought?')) return;
+
+    try {
+      const response = await fetch(`/api/savedthoughts?id=${thoughtId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      });
+      const result = await response.json();
+
+      if (!result.success) {
+        alert('Failed to delete thought');
+        return;
+      }
+
+      // Refresh the current page
+      fetchThoughts(state.pagination.currentPage, searchTerm);
+    } catch (error) {
+      alert('Failed to delete thought');
+    }
+  };
+
+  // Handle pagination
+  const handlePageChange = (page) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    router.replace(`/savedthoughts?${newParams.toString()}`, { scroll: false });
+    fetchThoughts(page, searchTerm);
+  };
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      fetchThoughts(1, searchParams.get('search') || '');
+    }
+  }, [isLoaded, user, fetchThoughts, searchParams]);
+
+  if (!isLoaded || state.loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="hero min-h-[50vh] bg-base-200">
+        <div className="hero-content text-center">
+          <div className="max-w-md">
+            <h1 className="text-5xl font-bold">Hello there</h1>
+            <p className="py-6">Please sign in to view your saved thoughts.</p>
+            <Link href="/sign-in" className="btn btn-primary">
+              Sign In
+            </Link>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <div className="alert alert-error shadow-lg max-w-2xl mx-auto">
+        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <h3 className="font-bold">Error!</h3>
+          <div className="text-xs">{state.error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header with Search */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 className="text-3xl font-bold">Your Saved Thoughts</h1>
+        <div className="flex gap-4 w-full md:w-auto">
+          <input
+            type="search"
+            placeholder="Search thoughts..."
+            className="input input-bordered w-full md:w-80"
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+          <Link href="/createthought" className="btn btn-primary whitespace-nowrap">
+            Create New
+          </Link>
+        </div>
+      </div>
+
+      {/* Thoughts Grid */}
+      {state.thoughts.length === 0 ? (
+        <div className="hero min-h-[50vh] bg-base-100 rounded-box">
+          <div className="hero-content text-center">
+            <div className="max-w-md">
+              <h2 className="text-2xl font-bold">
+                {searchTerm ? 'No matching thoughts found' : 'No thoughts yet'}
+              </h2>
+              <p className="py-6">
+                {searchTerm 
+                  ? 'Try adjusting your search terms'
+                  : 'Start by creating your first thankful thought!'}
+              </p>
+              {!searchTerm && (
+                <Link href="/createthought" className="btn btn-primary">
+                  Create Thought
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {state.thoughts.map((thought) => (
+              <div key={thought.id} className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                <div className="card-body">
+                  <h2 className="card-title">To: {thought.personName}</h2>
+                  <p className="whitespace-pre-wrap">{thought.message}</p>
+                  <div className="card-actions justify-between items-center mt-4">
+                    <div className="text-sm opacity-70">
+                      {new Date(thought.createdAt).toLocaleDateString()}
+                    </div>
+                    <button 
+                      className="btn btn-ghost btn-sm text-error"
+                      onClick={() => handleDelete(thought.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {state.pagination.pages > 1 && (
+            <div className="flex justify-center gap-2 pt-4">
+              {Array.from({ length: state.pagination.pages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  className={`btn btn-circle ${
+                    page === state.pagination.currentPage
+                      ? 'btn-primary'
+                      : 'btn-ghost'
+                  }`}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
