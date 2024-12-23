@@ -1,12 +1,13 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import debounce from 'lodash/debounce';
 
-export default function SavedThoughtsPage() {
+// Create a separate component for the search functionality
+function ThoughtsList() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,7 +25,6 @@ export default function SavedThoughtsPage() {
   });
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-
   const [editingThought, setEditingThought] = useState(null);
 
   const fetchThoughts = useCallback(async (page = 1, search = '') => {
@@ -354,5 +354,20 @@ export default function SavedThoughtsPage() {
         </>
       )}
     </div>
+  );
+}
+
+// Main page component with Suspense
+export default function SavedThoughtsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      }
+    >
+      <ThoughtsList />
+    </Suspense>
   );
 }
