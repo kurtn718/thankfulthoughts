@@ -25,6 +25,8 @@ export default function SavedThoughtsPage() {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
+  const [editingThought, setEditingThought] = useState(null);
+
   const fetchThoughts = useCallback(async (page = 1, search = '') => {
     if (!user) return;
 
@@ -133,6 +135,31 @@ export default function SavedThoughtsPage() {
     fetchThoughts(page, searchTerm);
   };
 
+  const handleUpdate = async (thoughtId, updatedData) => {
+    try {
+      const response = await fetch(`/api/savedthoughts?id=${thoughtId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        alert('Failed to update thought');
+        return;
+      }
+
+      // Refresh the current page
+      fetchThoughts(state.pagination.currentPage, searchTerm);
+      setEditingThought(null); // Close edit mode
+    } catch (error) {
+      alert('Failed to update thought');
+    }
+  };
+
   useEffect(() => {
     if (isLoaded && user) {
       fetchThoughts(1, searchParams.get('search') || '');
@@ -223,19 +250,84 @@ export default function SavedThoughtsPage() {
             {state.thoughts.map((thought) => (
               <div key={thought.id} className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
                 <div className="card-body">
-                  <h2 className="card-title">To: {thought.personName}</h2>
-                  <p className="whitespace-pre-wrap">{thought.message}</p>
-                  <div className="card-actions justify-between items-center mt-4">
-                    <div className="text-sm opacity-70">
-                      {new Date(thought.createdAt).toLocaleDateString()}
-                    </div>
-                    <button 
-                      className="btn btn-ghost btn-sm text-error"
-                      onClick={() => handleDelete(thought.id)}
+                  {editingThought === thought.id ? (
+                    // Edit Mode
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        handleUpdate(thought.id, {
+                          personName: formData.get('personName'),
+                          message: formData.get('message')
+                        });
+                      }}
+                      className="space-y-4"
                     >
-                      Delete
-                    </button>
-                  </div>
+                      <div>
+                        <label className="label">
+                          <span className="label-text">To:</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="personName"
+                          defaultValue={thought.personName}
+                          className="input input-bordered w-full"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="label">
+                          <span className="label-text">Message:</span>
+                        </label>
+                        <textarea
+                          name="message"
+                          defaultValue={thought.message}
+                          className="textarea textarea-bordered w-full h-24"
+                          required
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setEditingThought(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary btn-sm"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    // View Mode
+                    <>
+                      <h2 className="card-title">To: {thought.personName}</h2>
+                      <p className="whitespace-pre-wrap">{thought.message}</p>
+                      <div className="card-actions justify-between items-center mt-4">
+                        <div className="text-sm opacity-70">
+                          {new Date(thought.createdAt).toLocaleDateString()}
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => setEditingThought(thought.id)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="btn btn-ghost btn-sm text-error"
+                            onClick={() => handleDelete(thought.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

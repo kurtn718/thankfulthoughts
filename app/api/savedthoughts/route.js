@@ -137,4 +137,76 @@ export async function DELETE(request) {
       { status: 500 }
     );
   }
+}
+
+export async function PATCH(request) {
+  try {
+    const auth = getAuth(request);
+    const { userId: clerkId } = auth;
+
+    if (!clerkId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const thoughtId = searchParams.get('id');
+    const data = await request.json();
+
+    if (!thoughtId) {
+      return NextResponse.json(
+        { success: false, error: 'Thought ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { clerkId }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify ownership and update
+    const thought = await prisma.savedThought.findFirst({
+      where: {
+        id: thoughtId,
+        userId: user.id
+      }
+    });
+
+    if (!thought) {
+      return NextResponse.json(
+        { success: false, error: 'Thought not found' },
+        { status: 404 }
+      );
+    }
+
+    const updatedThought = await prisma.savedThought.update({
+      where: { id: thoughtId },
+      data: {
+        personName: data.personName,
+        message: data.message
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: updatedThought
+    });
+
+  } catch (error) {
+    console.error('Failed to update thought:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update thought' },
+      { status: 500 }
+    );
+  }
 } 
