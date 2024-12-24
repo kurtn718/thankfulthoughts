@@ -30,29 +30,22 @@ const API_CONFIGS = [
   }
 ];
 
-const SYSTEM_PROMPT = `You are a multilingual chatbot that helps people craft heartfelt messages of thanks and gratitude.
-
-Core directives:
-1. Your primary purpose is to assist in expressing gratitude, even if it includes acknowledging difficult or negative life events that someone helped the user navigate.
-2. Always aim to focus on the positive impact or support received in the context of the user's message.
-3. Decline requests unrelated to creating messages of thanks or gratitude.
-4. Default to English and respond in the same language as the user's message.
-5. IMPORTANT: Always respond in valid JSON format with this structure:
+const USER_MESSAGE_PROMPT = `Create a response based on the users input. 
+** IMPORTANT **
+Always respond in valid JSON format with this structure:
    {
      "type": "response",
      "content": "your message here",
      "askToSave": boolean,
-     "personName": "name if detected",
-     "savePrompt": "save prompt if askToSave is true"
+     "personName": "name if detected"
    }
 
 Example response when user provides a name:
 {
   "type": "response",
-  "content": "Dear Sarah, thank you for your unwavering support...",
+  "content": "Dear Sarah Jones, thank you for your unwavering support...",
   "askToSave": true,
-  "personName": "Sarah",
-  "savePrompt": "Would you like to save this thank you message for Sarah?"
+  "personName": "Sarah Jones"
 }
 
 Example response for general query:
@@ -60,7 +53,18 @@ Example response for general query:
   "type": "response",
   "content": "I'd be happy to help you craft a thank you message. Who would you like to thank?",
   "askToSave": false
-}`;
+}
+
+INPUT: 
+`;
+
+const SYSTEM_PROMPT = `You are a multilingual chatbot that helps people craft heartfelt messages of thanks and gratitude.
+
+Core directives:
+1. Your primary purpose is to assist in expressing gratitude, even if it includes acknowledging difficult or negative life events that someone helped the user navigate.
+2. Always aim to focus on the positive impact or support received in the context of the user's message.
+3. Decline requests unrelated to creating messages of thanks or gratitude.
+4. Default to English and respond in the same language as the user's message.`;
 
 
 async function tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail) {
@@ -84,11 +88,17 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
       content: SYSTEM_PROMPT
     };
 
+    // Modify the new message by prepending USER_MESSAGE_PROMPT
+    const modifiedNewMessage = {
+      ...newMessage,
+      content: `${USER_MESSAGE_PROMPT}${newMessage.content}`
+    };
+
     // Create clean message array with system message and chat history
     const cleanMessages = [
       systemMessage,
       ...messages.filter(msg => msg.role !== 'system'),
-      newMessage  // Add the new message at the end
+      modifiedNewMessage  // Use the modified message
     ].map(msg => ({
       role: msg.role,
       content: msg.content
@@ -209,58 +219,69 @@ export const generateChatResponse = async (chatMessages, newMessage, userEmail) 
 };
 
 function correctApiResponse(rawResponse) {
-  // Parse the raw JSON string
-  let parsedResponse;
+  // First try to parse the entire response as JSON
   try {
-      parsedResponse = JSON.parse(rawResponse);
-  } catch (error) {
-      throw new Error("Invalid JSON string");
-  }
+    const parsedResponse = JSON.parse(rawResponse);
+    if (parsedResponse.type === "response") {
 
-  // Initialize the corrected response with sensible defaults
-  const correctedResponse = {
-      type: "response",
-      content: parsedResponse.content || "",
-      askToSave: false,
-      personName: null,
-      savePrompt: null
-  };
+      // Search to see if parsedResponse.content has any JSON substring in it and store in a variable and remove from parsedResponse.content
+      const jsonSubstring = parsedResponse.content.match(/(\{[\s\S]*\})/);
+      if (jsonSubstring) {
+        const jsonContent = jsonSubstring[0];
+        parsedResponse.content = parsedResponse.content.replace(jsonSubstring[0], '');
 
-  // Check if the response is already in the desired format
-  const isValidFormat =
-      parsedResponse.type === "response" &&
-      parsedResponse.content &&
-      "askToSave" in parsedResponse &&
-      "personName" in parsedResponse &&
-      "savePrompt" in parsedResponse;
+        // If jsonContent is valid JSON and it has content, askToSave, or personName store those in variables
+        const jsonContentObject = JSON.parse(jsonContent);
+        const content = jsonContentObject.content;
+        const askToSave = jsonContentObject.askToSave;
+        const personName = jsonContentObject.personName;
 
-  if (isValidFormat) {
-      return parsedResponse; // Return as is if the response is already valid
-  }
-
-  // Try to extract embedded JSON from the "content" field
-  try {
-      const contentMatch = parsedResponse.content.match(/\{[\s\S]*\}$/);
-      if (contentMatch) {
-          const extractedContent = JSON.parse(contentMatch[0]);
-
-          // Append the embedded content to the main content
-          correctedResponse.content = parsedResponse.content
-              .split("\n\n")[0]
-              .trim();
-
-          if (extractedContent.content) {
-              correctedResponse.content += ` ${extractedContent.content.trim()}`;
-          }
-
-          correctedResponse.askToSave = extractedContent.askToSave ?? false;
-          correctedResponse.personName = extractedContent.personName ?? null;
-          correctedResponse.savePrompt = extractedContent.savePrompt ?? null;
+        // Combine the content with the rest of the parsedResponse.content
+        parsedResponse.content = `${parsedResponse.content}\n\n${content}`;
+        // If askToSave was already true, keep it true, otherwise set it to askToSave
+        parsedResponse.askToSave = askToSave || parsedResponse.askToSave;
+        parsedResponse.personName = personName || parsedResponse.personName;
       }
-  } catch {
-      // If parsing the embedded JSON fails, warn but don't break the function
-      console.warn("Failed to parse embedded JSON. Retaining original content.");
+
+      return {
+        type: parsedResponse.type,
+        content: parsedResponse.content,
+        askToSave: parsedResponse.askToSave ?? false,
+        personName: parsedResponse.personName || null
+      };
+    }
+  } catch (error) {
+    // Not valid JSON, continue to next step
   }
 
-  return correctedResponse;
+  // Look for JSON at the end of the string
+  const jsonMatch = rawResponse.match(/(\{[\s\S]*\})$/);
+  if (jsonMatch) {
+    try {
+      const jsonPart = JSON.parse(jsonMatch[0]);
+      const textPart = rawResponse.slice(0, jsonMatch.index).trim();
+
+      // Combine text part with JSON content if both exist
+      const combinedContent = textPart
+        ? `${textPart}\n\n${jsonPart.content || ''}`
+        : jsonPart.content;
+
+      return {
+        type: "response",
+        content: combinedContent,
+        askToSave: jsonPart.askToSave ?? false,
+        personName: jsonPart.personName || null
+      };
+    } catch (error) {
+      console.warn("Failed to parse JSON part:", error);
+    }
+  }
+
+  // Fallback return if no valid JSON found
+  return {
+    type: "response",
+    content: rawResponse,
+    askToSave: false,
+    personName: null
+  };
 }
