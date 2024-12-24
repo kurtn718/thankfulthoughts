@@ -15,12 +15,18 @@ const API_CONFIGS = [
     }
   ] : []),
   {
-    baseURL: 'https://openrouter.ai/api/v1',
+    baseURL: 'https://openrouter.helicone.ai/api/v1',
     apiKey: process.env.OPENROUTER_API_KEY,
     models: [
       'meta-llama/llama-3.1-8b-instruct:free',
       'mistralai/ministral-8b'
-    ]
+    ],
+    headers: {
+      'Helicone-Auth': `Bearer ${process.env.HELICONE_API_KEY}`,
+      'Helicone-Cache-Enabled': 'true',
+      'HTTP-Referer': 'https://thankful-thoughts.com',
+      'X-Title': 'Thankful Thoughts',
+    }
   }
 ];
 
@@ -57,10 +63,14 @@ Example response for general query:
 }`;
 
 
-async function tryGenerateResponse(config, modelIndex, messages, newMessage) {
+async function tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail) {
   const openai = new OpenAI({
     baseURL: config.baseURL,
     apiKey: config.apiKey,
+    defaultHeaders: {
+      ...config.headers,
+      'Helicone-User-Id': userEmail || 'anonymous',
+    }
   });
 
   try {
@@ -127,7 +137,7 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage) {
   }
 }
 
-export const generateChatResponse = async (chatMessages, newMessage) => {
+export const generateChatResponse = async (chatMessages, newMessage, userEmail) => {
   try {
     // Don't include newMessage here since it will be added in cleanMessages
     const messages = [
@@ -149,7 +159,7 @@ export const generateChatResponse = async (chatMessages, newMessage) => {
         
         try {
           // Pass newMessage separately to tryGenerateResponse
-          const response = await tryGenerateResponse(config, modelIndex, messages, newMessage);
+          const response = await tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail);
           if (response) {
             console.log(`✅ Successfully used ${config.baseURL} - ${currentModel}`);
             return response;

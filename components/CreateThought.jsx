@@ -27,7 +27,7 @@ const CreateThought = () => {
     
     welcomeMessageSent.current = true;
     
-    generateChatResponse([], welcomeQuery)
+    generateChatResponse([], welcomeQuery, "hello@thankful-thoughts.com")
       .then((response) => {
         if (response) {
           try {
@@ -49,7 +49,7 @@ const CreateThought = () => {
   }, []);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (query) => generateChatResponse(messages, query),
+    mutationFn: (query) => generateChatResponse(messages, query, user.emailAddresses[0]?.emailAddress),
     onSuccess: (data) => {
       if (!data) {
         console.error('No data returned from mutation');
