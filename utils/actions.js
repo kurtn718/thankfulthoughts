@@ -113,8 +113,13 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
       throw new Error('Invalid response structure');
     }
 
-    console.log('✅ Success! Response message:', JSON.stringify(response.choices[0].message, null, 2));
-    return response.choices[0].message;
+    const message = response.choices[0].message;
+    // Apply the correction to the message content
+    const correctedContent = correctApiResponse(message.content);
+    message.content = JSON.stringify(correctedContent);
+
+    console.log('✅ Success! Response message:', JSON.stringify(message, null, 2));
+    return message;
   } catch (error) {
     console.log('\n=== Error Details ===');
     console.log(`Error with ${config.models[modelIndex]}:`, {
@@ -202,3 +207,60 @@ export const generateChatResponse = async (chatMessages, newMessage, userEmail) 
     };
   }
 };
+
+function correctApiResponse(rawResponse) {
+  // Parse the raw JSON string
+  let parsedResponse;
+  try {
+      parsedResponse = JSON.parse(rawResponse);
+  } catch (error) {
+      throw new Error("Invalid JSON string");
+  }
+
+  // Initialize the corrected response with sensible defaults
+  const correctedResponse = {
+      type: "response",
+      content: parsedResponse.content || "",
+      askToSave: false,
+      personName: null,
+      savePrompt: null
+  };
+
+  // Check if the response is already in the desired format
+  const isValidFormat =
+      parsedResponse.type === "response" &&
+      parsedResponse.content &&
+      "askToSave" in parsedResponse &&
+      "personName" in parsedResponse &&
+      "savePrompt" in parsedResponse;
+
+  if (isValidFormat) {
+      return parsedResponse; // Return as is if the response is already valid
+  }
+
+  // Try to extract embedded JSON from the "content" field
+  try {
+      const contentMatch = parsedResponse.content.match(/\{[\s\S]*\}$/);
+      if (contentMatch) {
+          const extractedContent = JSON.parse(contentMatch[0]);
+
+          // Append the embedded content to the main content
+          correctedResponse.content = parsedResponse.content
+              .split("\n\n")[0]
+              .trim();
+
+          if (extractedContent.content) {
+              correctedResponse.content += ` ${extractedContent.content.trim()}`;
+          }
+
+          correctedResponse.askToSave = extractedContent.askToSave ?? false;
+          correctedResponse.personName = extractedContent.personName ?? null;
+          correctedResponse.savePrompt = extractedContent.savePrompt ?? null;
+      }
+  } catch {
+      // If parsing the embedded JSON fails, warn but don't break the function
+      console.warn("Failed to parse embedded JSON. Retaining original content.");
+  }
+
+  return correctedResponse;
+}
