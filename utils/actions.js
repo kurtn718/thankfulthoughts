@@ -30,7 +30,7 @@ const API_CONFIGS = [
   }
 ];
 
-const USER_MESSAGE_PROMPT = `Create a response based on the users input. 
+const USER_MESSAGE_PROMPT = `Create a response based on all of the previous messages and the users input. 
 ** IMPORTANT **
 Always respond in valid JSON format with this structure:
    {
@@ -97,7 +97,9 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
     // Create clean message array with system message and chat history
     const cleanMessages = [
       systemMessage,
-      ...messages.filter(msg => msg.role !== 'system'),
+      ...messages
+        .filter(msg => msg.role !== 'system')  // Remove system messages
+        .filter(msg => !msg.isSavePrompt),     // Remove save prompts
       modifiedNewMessage  // Use the modified message
     ].map(msg => ({
       role: msg.role,
@@ -154,13 +156,13 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
 
 export const generateChatResponse = async (chatMessages, newMessage, userEmail) => {
   try {
-    // Don't include newMessage here since it will be added in cleanMessages
+    // Only include previous messages, not the new message
     const messages = [
       { 
         role: 'system', 
         content: SYSTEM_PROMPT
       },
-      ...chatMessages
+      ...chatMessages.slice(0, -1)  // Remove the last message since it will be added with prompt
     ];
 
     // Try each configuration and model in sequence
