@@ -171,16 +171,7 @@ const CreateThought = () => {
       content: text,
     };
     setMessages((prev) => [...prev, query]);
-    
-    // Clean up messages before sending to LLM
-    const cleanMessages = messages.map(msg => ({
-      role: msg.role,
-      content: msg.role === 'assistant' && typeof msg.content === 'string'
-        ? JSON.parse(msg.content)?.content || msg.content
-        : msg.content
-    }));
-    
-    mutate({ ...query, messages: cleanMessages });
+    mutate(query);
     setText('');
   };
 
