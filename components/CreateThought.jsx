@@ -176,7 +176,7 @@ const CreateThought = () => {
   };
 
   return (
-    <div className='min-h-[calc(100vh-6rem)] grid grid-rows-[auto,1fr,auto] gap-4 pb-8'>
+    <div className='min-h-[calc(100vh-6rem)] flex flex-col gap-4 pb-8 px-4 md:px-8'>
       <div>
         {messages.map(({ role, content, isSavePrompt }, index) => {
           const avatar = role == 'user' ? '👤' : '🤖';
@@ -184,11 +184,11 @@ const CreateThought = () => {
           return (
             <div
               key={index}
-              className={`${bcg} flex py-6 -mx-8 px-8 text-xl leading-loose border-b border-base-300`}
+              className={`${bcg} flex py-4 md:py-6 px-4 md:px-8 text-base md:text-xl leading-loose border-b border-base-300`}
             >
               <span className='mr-4'>{avatar}</span>
               <div className='flex-1'>
-                <p className='max-w-3xl'>{content}</p>
+                <p className='max-w-[280px] md:max-w-3xl break-words'>{content}</p>
                 {isSavePrompt && (
                   <div className="mt-4 flex gap-2">
                     <button 
@@ -210,26 +210,26 @@ const CreateThought = () => {
           );
         })}
         {(isPending || isLoadingWelcome) && (
-          <div className='flex py-6 -mx-8 px-8'>
+          <div className='flex py-6 px-4 md:px-8'>
             <span className='mr-4'>🤖</span>
             <span className='loading loading-dots'></span>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className='max-w-4xl mx-auto w-full'>
+      <form onSubmit={handleSubmit} className='max-w-4xl mx-auto w-full mt-auto'>
         <div className='join w-full gap-2'>
           <input
             type='text'
             placeholder='Message Thankful Thoughts'
-            className='input input-bordered join-item flex-1 px-40 py-6'
+            className='input input-bordered join-item flex-1 px-4 md:px-6 py-4 md:py-6'
             value={text}
             required
             onChange={(e) => setText(e.target.value)}
             disabled={isLoadingWelcome}
           />
           <button 
-            className='btn btn-primary join-item px-6' 
+            className='btn btn-primary join-item px-4 md:px-6 whitespace-nowrap'
             type='submit' 
             disabled={isPending || isLoadingWelcome}
           >
