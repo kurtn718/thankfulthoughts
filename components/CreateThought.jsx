@@ -176,8 +176,8 @@ const CreateThought = () => {
   };
 
   return (
-    <div className='min-h-[calc(100vh-6rem)] flex flex-col gap-4 pb-8 px-4 md:px-8'>
-      <div>
+    <div className='h-[calc(100vh-6rem)] flex flex-col px-4 md:px-8'>
+      <div className='flex-1 overflow-y-auto'>
         {messages.map(({ role, content, isSavePrompt }, index) => {
           const avatar = role == 'user' ? '👤' : '🤖';
           const bcg = role == 'user' ? 'bg-base-200' : 'bg-base-100';
@@ -217,7 +217,7 @@ const CreateThought = () => {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className='max-w-4xl mx-auto w-full mt-auto'>
+      <form onSubmit={handleSubmit} className='max-w-4xl mx-auto w-full sticky bottom-0 py-4 bg-base-200'>
         <div className='join w-full gap-2'>
           <input
             type='text'
