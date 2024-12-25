@@ -176,7 +176,7 @@ const CreateThought = () => {
   };
 
   return (
-    <div className='h-[calc(100vh-6rem)] flex flex-col px-4 md:px-8'>
+    <div className='h-[calc(100vh-6rem)] flex flex-col w-full max-w-full'>
       <div className='flex-1 overflow-y-auto'>
         {messages.map(({ role, content, isSavePrompt }, index) => {
           const avatar = role == 'user' ? '👤' : '🤖';
@@ -184,13 +184,13 @@ const CreateThought = () => {
           return (
             <div
               key={index}
-              className={`${bcg} flex py-4 md:py-6 px-4 md:px-8 text-base md:text-xl leading-loose border-b border-base-300`}
+              className={`${bcg} flex py-4 md:py-6 px-3 md:px-8 text-base md:text-xl leading-loose border-b border-base-300`}
             >
               <span className='mr-4'>{avatar}</span>
               <div className='flex-1'>
-                <p className='max-w-[280px] md:max-w-3xl break-words'>{content}</p>
+                <p className='break-words'>{content}</p>
                 {isSavePrompt && (
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <button 
                       onClick={handleSave}
                       className="btn btn-primary btn-sm"
@@ -210,26 +210,26 @@ const CreateThought = () => {
           );
         })}
         {(isPending || isLoadingWelcome) && (
-          <div className='flex py-6 px-4 md:px-8'>
+          <div className='flex py-6 px-3 md:px-8'>
             <span className='mr-4'>🤖</span>
             <span className='loading loading-dots'></span>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className='max-w-4xl mx-auto w-full sticky bottom-0 py-4 bg-base-200'>
-        <div className='join w-full gap-2'>
+      <form onSubmit={handleSubmit} className='sticky bottom-0 py-4 px-3 md:px-8 bg-base-200'>
+        <div className='join w-full max-w-4xl mx-auto gap-2'>
           <input
             type='text'
             placeholder='Message Thankful Thoughts'
-            className='input input-bordered join-item flex-1 px-4 md:px-6 py-4 md:py-6'
+            className='input input-bordered join-item flex-1 px-3 py-4'
             value={text}
             required
             onChange={(e) => setText(e.target.value)}
             disabled={isLoadingWelcome}
           />
           <button 
-            className='btn btn-primary join-item px-4 md:px-6 whitespace-nowrap'
+            className='btn btn-primary join-item whitespace-nowrap'
             type='submit' 
             disabled={isPending || isLoadingWelcome}
           >
