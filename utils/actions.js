@@ -157,13 +157,28 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
 
 export const generateChatResponse = async (chatMessages, newMessage, userEmail) => {
   try {
-    // Only include previous messages, not the new message
+    // Clean and transform previous messages to only include content from JSON responses
     const messages = [
       { 
         role: 'system', 
         content: SYSTEM_PROMPT
       },
-      ...chatMessages.slice(0, -1)  // Remove the last message since it will be added with prompt
+      ...chatMessages.slice(0, -1).map(msg => {
+        if (msg.role === 'assistant') {
+          try {
+            // Parse the JSON response and extract just the content
+            const parsed = JSON.parse(msg.content);
+            return {
+              role: 'assistant',
+              content: parsed.content
+            };
+          } catch (error) {
+            // If parsing fails, use the original content
+            return msg;
+          }
+        }
+        return msg;
+      })
     ];
 
     // Try each configuration and model in sequence
