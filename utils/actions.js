@@ -19,6 +19,7 @@ const API_CONFIGS = [
     apiKey: process.env.OPENROUTER_API_KEY,
     models: [
       'meta-llama/llama-3.1-8b-instruct:free',
+      'meta-llama/llama-3.1-8b-instruct',
       'mistralai/ministral-8b'
     ],
     headers: {
