@@ -102,14 +102,30 @@ const CreateThought = () => {
           console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
 
           // Mark all existing messages as skipContext and remove personName
-          setMessages(prev => prev.map(msg => ({ ...msg, skipContext: true, personName: null })));
-
-          // Resubmit user query
-          const query = {
-            role: 'user',
-            content: previousText
-          };
-          mutate(query);
+          setMessages(prev => {
+            const updatedMessages = prev.map(msg => ({ 
+              ...msg, 
+              skipContext: true, 
+              personName: null 
+            }));
+            
+            // Create new query with the updated context
+            const query = {
+              role: 'user',
+              content: previousText
+            };
+            
+            // Wait for next tick to ensure state is updated
+            setTimeout(() => {
+              console.log('Resubmitting with updated context:', {
+                messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
+                totalMessages: updatedMessages.length
+              });
+              mutate(query);
+            }, 0);
+            
+            return updatedMessages;
+          });
           return;
         }
         
