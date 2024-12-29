@@ -99,8 +99,9 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
     const cleanMessages = [
       systemMessage,
       ...messages
-        .filter(msg => msg.role !== 'system')  // Remove system messages
-        .filter(msg => !msg.isSavePrompt),     // Remove save prompts
+        .filter(msg => msg.role !== 'system')    // Remove system messages
+        .filter(msg => !msg.isSavePrompt)        // Remove save prompts
+        .filter(msg => !msg.skipContext),        // Keep messages WITHOUT skipContext flag
       modifiedNewMessage  // Use the modified message
     ].map(msg => ({
       role: msg.role,
@@ -265,7 +266,8 @@ function correctApiResponse(rawResponse) {
         type: parsedResponse.type,
         content: parsedResponse.content,
         askToSave: parsedResponse.askToSave ?? false,
-        personName: parsedResponse.personName || null
+        personName: parsedResponse.personName || null,
+        skipContext: false
       };
     }
   } catch (error) {
@@ -288,7 +290,8 @@ function correctApiResponse(rawResponse) {
         type: "response",
         content: combinedContent,
         askToSave: jsonPart.askToSave ?? false,
-        personName: jsonPart.personName || null
+        personName: jsonPart.personName || null,
+        skipContext: false
       };
     } catch (error) {
       console.warn("Failed to parse JSON part:", error);
@@ -300,6 +303,7 @@ function correctApiResponse(rawResponse) {
     type: "response",
     content: rawResponse,
     askToSave: false,
-    personName: null
+    personName: null,
+    skipContext: false
   };
 }

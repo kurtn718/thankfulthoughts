@@ -9,6 +9,7 @@ import { useUser } from '@clerk/nextjs';
 const CreateThought = () => {
   const { user } = useUser();
   const [text, setText] = useState('');
+  const [previousText, setPreviousText] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoadingWelcome, setIsLoadingWelcome] = useState(true);
   const [currentContext, setCurrentContext] = useState(null);
@@ -48,6 +49,40 @@ const CreateThought = () => {
       });
   }, []);
 
+  const getLastPersonNameFromMessages = (messages) => {
+    console.log('*** Messages:', messages);
+    const lastPersonName = [...messages]
+      .reverse()
+      .find(msg => {
+        if (msg.role === 'assistant') {
+          try {
+            // We need to parse the content if it's a JSON string
+            const parsed = JSON.parse(msg.content);
+            return parsed.personName != null;
+          } catch (e) {
+            // If we already have a parsed object with personName
+            return msg.personName != null;
+          }
+        }
+        return false;
+      });
+
+    // Return just the personName, either from parsed content or direct property
+    if (lastPersonName) {
+      if (lastPersonName.personName) {
+        return lastPersonName.personName;
+      }
+      try {
+        const parsed = JSON.parse(lastPersonName.content);
+        return parsed.personName;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+  
+
   const { mutate, isPending } = useMutation({
     mutationFn: (query) => generateChatResponse(messages, query, user.emailAddresses[0]?.emailAddress),
     onSuccess: (data) => {
@@ -60,11 +95,30 @@ const CreateThought = () => {
         console.log('Raw LLM response:', data);
         const jsonResponse = JSON.parse(data.content);
         console.log('Parsed JSON response:', jsonResponse);
+
+        const lastPersonName = getLastPersonNameFromMessages(messages);
+
+        if (lastPersonName && jsonResponse.personName && jsonResponse.personName != lastPersonName) {
+          console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
+
+          // Mark all existing messages as skipContext and remove personName
+          setMessages(prev => prev.map(msg => ({ ...msg, skipContext: true, personName: null })));
+
+          // Resubmit user query
+          const query = {
+            role: 'user',
+            content: previousText
+          };
+          mutate(query);
+          return;
+        }
         
         // Add the response to messages
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: jsonResponse.content 
+          content: jsonResponse.content,
+          skipContext: false,
+          personName: jsonResponse.personName
         }]);
 
         // If this is a message that can be saved, store the context and add save prompt
@@ -171,6 +225,7 @@ const CreateThought = () => {
       content: text,
     };
     setMessages((prev) => [...prev, query]);
+    setPreviousText(text);
     mutate(query);
     setText('');
   };
