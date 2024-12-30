@@ -294,31 +294,29 @@ const CreateThought = () => {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className='sticky bottom-0 py-4 px-3 md:px-8 bg-base-200'>
+      <form onSubmit={handleSubmit} className='sticky bottom-0 py-4 px-2 sm:px-3 md:px-8 bg-base-200'>
         <div className='flex flex-col w-full max-w-4xl mx-auto gap-2'>
-          <div className='join w-full gap-2'>
+          <div className='join w-full gap-1 sm:gap-2'>
             <input
               type='text'
               placeholder='Message Thankful Thoughts'
-              className='input input-bordered join-item flex-1 px-3 py-4'
+              className='input input-bordered join-item flex-1 px-2 sm:px-3 py-4 min-w-0'
               value={text}
               required
               onChange={(e) => setText(e.target.value)}
               disabled={isLoadingWelcome}
             />
             <button 
-              className='btn btn-primary join-item whitespace-nowrap'
+              className='btn btn-primary join-item !px-2 sm:!px-4'
               type='submit' 
               disabled={isPending || isLoadingWelcome}
             >
-              {isPending || isLoadingWelcome ? 'Loading...' : 'Create Thought'}
+              {isPending || isLoadingWelcome ? 'Loading...' : 'Create'}
             </button>
           </div>
 
-          <div className='flex items-center gap-3'>
-            <label className='text-sm text-gray-500 whitespace-nowrap'>Message Length:</label>
-
-
+          <div className='flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2'>
+            <label className='text-xs sm:text-sm text-gray-500 whitespace-nowrap'>Message Length:</label>
             <div className="btn-group shadow-md">
               <button
                 type="button"
