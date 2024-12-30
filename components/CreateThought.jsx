@@ -13,6 +13,7 @@ const CreateThought = () => {
   const [messages, setMessages] = useState([]);
   const [isLoadingWelcome, setIsLoadingWelcome] = useState(true);
   const [currentContext, setCurrentContext] = useState(null);
+  const [messageLength, setMessageLength] = useState('medium');
   const welcomeMessageSent = useRef(false);
 
   useEffect(() => {
@@ -23,7 +24,8 @@ const CreateThought = () => {
       content: `Generate a friendly welcome message with these key points:
         1. Explain that the user only has to specify the name of the person they want to send a message to
         and anything special or details they want to include.
-        2. Keep the tone friendly and inviting, but concise (max 3-4 sentences).`
+        2. Keep the tone friendly and inviting, but concise. `,
+      messageLength: 'medium'
     };
     
     welcomeMessageSent.current = true;
@@ -109,17 +111,19 @@ const CreateThought = () => {
               personName: null 
             }));
             
-            // Create new query with the updated context
+            // Create new query with the updated context and messageLength
             const query = {
               role: 'user',
-              content: previousText
+              content: previousText,
+              messageLength: messageLength
             };
             
             // Wait for next tick to ensure state is updated
             setTimeout(() => {
               console.log('Resubmitting with updated context:', {
                 messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
-                totalMessages: updatedMessages.length
+                totalMessages: updatedMessages.length,
+                messageLength: messageLength
               });
               mutate(query);
             }, 0);
@@ -129,12 +133,13 @@ const CreateThought = () => {
           return;
         }
         
-        // Add the response to messages
+        // Add the response to messages with messageLength
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: jsonResponse.content,
           skipContext: false,
-          personName: jsonResponse.personName
+          personName: jsonResponse.personName,
+          messageLength: messageLength
         }]);
 
         // If this is a message that can be saved, store the context and add save prompt
@@ -239,6 +244,7 @@ const CreateThought = () => {
     const query = {
       role: 'user',
       content: text,
+      messageLength: messageLength,
     };
     setMessages((prev) => [...prev, query]);
     setPreviousText(text);
@@ -289,23 +295,63 @@ const CreateThought = () => {
       </div>
 
       <form onSubmit={handleSubmit} className='sticky bottom-0 py-4 px-3 md:px-8 bg-base-200'>
-        <div className='join w-full max-w-4xl mx-auto gap-2'>
-          <input
-            type='text'
-            placeholder='Message Thankful Thoughts'
-            className='input input-bordered join-item flex-1 px-3 py-4'
-            value={text}
-            required
-            onChange={(e) => setText(e.target.value)}
-            disabled={isLoadingWelcome}
-          />
-          <button 
-            className='btn btn-primary join-item whitespace-nowrap'
-            type='submit' 
-            disabled={isPending || isLoadingWelcome}
-          >
-            {isPending || isLoadingWelcome ? 'Loading...' : 'Create Thought'}
-          </button>
+        <div className='flex flex-col w-full max-w-4xl mx-auto gap-2'>
+          <div className='join w-full gap-2'>
+            <input
+              type='text'
+              placeholder='Message Thankful Thoughts'
+              className='input input-bordered join-item flex-1 px-3 py-4'
+              value={text}
+              required
+              onChange={(e) => setText(e.target.value)}
+              disabled={isLoadingWelcome}
+            />
+            <button 
+              className='btn btn-primary join-item whitespace-nowrap'
+              type='submit' 
+              disabled={isPending || isLoadingWelcome}
+            >
+              {isPending || isLoadingWelcome ? 'Loading...' : 'Create Thought'}
+            </button>
+          </div>
+
+          <div className='flex items-center gap-3'>
+            <label className='text-sm text-gray-500 whitespace-nowrap'>Message Length:</label>
+
+
+            <div className="btn-group shadow-md">
+              <button
+                type="button"
+                className={`btn btn-sm border transition-all
+                  ${messageLength === 'short' 
+                    ? 'bg-gradient-to-b from-slate-50 to-slate-200 border-slate-300 shadow-inner' 
+                    : 'bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200'}`}
+                onClick={() => setMessageLength('short')}
+              >
+                Short
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm border transition-all
+                  ${messageLength === 'medium' 
+                    ? 'bg-gradient-to-b from-slate-50 to-slate-200 border-slate-300 shadow-inner' 
+                    : 'bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200'}`}
+                onClick={() => setMessageLength('medium')}
+              >
+                Medium
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm border transition-all
+                  ${messageLength === 'long' 
+                    ? 'bg-gradient-to-b from-slate-50 to-slate-200 border-slate-300 shadow-inner' 
+                    : 'bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200'}`}
+                onClick={() => setMessageLength('long')}
+              >
+                Long
+              </button>
+            </div>
+          </div>
         </div>
       </form>
     </div>

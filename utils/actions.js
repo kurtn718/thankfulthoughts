@@ -31,7 +31,7 @@ const API_CONFIGS = [
   }
 ];
 
-const USER_MESSAGE_PROMPT = `Create a response based on all of the previous messages and the users input. 
+const USER_MESSAGE_PROMPT = `Create a response of messageLength: $messageLength$ based on all of the previous messages and the users input. 
 ** IMPORTANT **
 Always respond in valid JSON format with this structure:
    {
@@ -65,7 +65,11 @@ Core directives:
 1. Your primary purpose is to assist in expressing gratitude, even if it includes acknowledging difficult or negative life events that someone helped the user navigate.
 2. Always aim to focus on the positive impact or support received in the context of the user's message.
 3. Decline requests unrelated to creating messages of thanks or gratitude.
-4. Default to English and respond in the same language as the user's message.`;
+4. Default to English and respond in the same language as the user's message.
+5. Adjust response length based on user's messageLength preference:
+   - 'short': 2-3 sentences
+   - 'medium': 4-6 sentences (default)
+   - 'long': 7-10 sentences`;
 
 
 async function tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail) {
@@ -89,10 +93,12 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
       content: SYSTEM_PROMPT
     };
 
-    // Modify the new message by prepending USER_MESSAGE_PROMPT
+    const messageLength = newMessage.messageLength || 'medium';
+    const promptWithMessageLength = USER_MESSAGE_PROMPT.replace('$messageLength$', messageLength);
     const modifiedNewMessage = {
       ...newMessage,
-      content: `${USER_MESSAGE_PROMPT}${newMessage.content}`
+      content: `${promptWithMessageLength} ${newMessage.content}`,
+      messageLength: messageLength
     };
 
     // Create clean message array with system message and chat history
