@@ -153,22 +153,24 @@ const CreateThought = () => {
   };
   
 
-  const processLLMResponse = (data, messages, previousText, messageLength, mutate) => {
-    console.log('Raw LLM response:', data);
+  const handlePersonChange = (llmResponse, lastPersonName, messages, previousText, messageLength, mutate) => {
+    if (!lastPersonName || !llmResponse.personName || llmResponse.personName === lastPersonName) {
+      return false;
+    }
 
-    const jsonResponse = Array.isArray(data) 
-      ? JSON.parse(data[0].content)
-      : JSON.parse(data.content);
-          
-    console.log('Parsed JSON response:', jsonResponse);
+    console.log('*** New person:', llmResponse.personName, 'vs', lastPersonName);
 
-    const lastPersonName = getLastPersonNameFromMessages(messages);
+    // Create new query with the updated context and messageLength
+    const query = {
+      role: 'user',
+      content: previousText,
+      messageLength: messageLength
+    };
 
-    if (lastPersonName && jsonResponse.personName && jsonResponse.personName !== lastPersonName) {
-      console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
-
-      // Mark all existing messages as skipContext and remove personName
-      setMessages(prev => {
+    // Mark all existing messages as skipContext and remove personName
+    setMessages(prev => {
+      // Only update messages if we haven't already marked them
+      if (prev.some(msg => !msg.skipContext)) {
         const updatedMessages = prev.map(msg => ({
           role: msg.role,
           content: msg.content,
@@ -176,15 +178,8 @@ const CreateThought = () => {
           messageLength: msg.messageLength,
           ...(msg.isSavePrompt && { isSavePrompt: true })
         }));
-        
-        // Create new query with the updated context and messageLength
-        const query = {
-          role: 'user',
-          content: previousText,
-          messageLength: messageLength
-        };
-        
-              // Wait for next tick to ensure state is updated
+
+        // Schedule mutation for next tick after state update
         setTimeout(() => {
           console.log('Resubmitting with updated context:', {
             messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
@@ -193,18 +188,35 @@ const CreateThought = () => {
           });
           mutate(query);
         }, 0);
-        
+
         return updatedMessages;
-      });
-      return;
+      }
+      return prev;
+    });
+
+    return true;
+  };
+
+  const processLLMResponse = (data, messages, previousText, messageLength, mutate) => {
+    console.log('Raw LLM response:', data);
+
+    const llmResponse = Array.isArray(data) 
+      ? JSON.parse(data[0].content)
+      : JSON.parse(data.content);
+          
+    console.log('Parsed LLM response:', llmResponse);
+
+    const lastPersonName = getLastPersonNameFromMessages(messages);
+
+    // If person changed, don't process this response
+    if (handlePersonChange(llmResponse, lastPersonName, messages, previousText, messageLength, mutate)) {
+      return null;
     }
 
     // Add the response to messages with messageLength
-          // If we have extra messages, add them to the end of the array
     if (Array.isArray(data)) {
       const processedMessages = data.map(msg => {
         try {
-                // Try to parse the content if it's JSON
           const parsedContent = JSON.parse(msg.content);
           return {
             ...msg,
@@ -212,7 +224,6 @@ const CreateThought = () => {
             role: msg.role || parsedContent.role || 'assistant'
           };
         } catch (e) {
-                // If parsing fails, use the content as-is
           return msg;
         }
       });
@@ -220,14 +231,14 @@ const CreateThought = () => {
     } else {
       setMessages(prev => [...prev, { 
         role: data.role, 
-        content: jsonResponse.content,
+        content: llmResponse.content,
         skipContext: false,
-        personName: jsonResponse.personName,
+        personName: llmResponse.personName,
         messageLength: messageLength
       }]);
     }
 
-    return jsonResponse;
+    return llmResponse;
   };
 
   const { mutate, isPending } = useMutation({
@@ -239,35 +250,34 @@ const CreateThought = () => {
         return;
       }
       try {
-        const jsonResponse = processLLMResponse(data, messages, previousText, messageLength, mutate);
+        const llmResponse = processLLMResponse(data, messages, previousText, messageLength, mutate);
         
-        // If this is a message that can be saved, store the context and add save prompt
-        if (jsonResponse.askToSave) {
+        // Only process save prompt if we have a response (not changing person)
+        if (llmResponse?.askToSave) {
           console.log('Save prompt triggered:', {
-            personName: jsonResponse.personName,
-            messageLength: jsonResponse.content?.length,
-            savePrompt: jsonResponse.savePrompt
+            personName: llmResponse.personName,
+            messageLength: llmResponse.content?.length,
+            savePrompt: llmResponse.savePrompt
           });
 
           setCurrentContext({
-            personName: jsonResponse.personName,
-            message: jsonResponse.content
+            personName: llmResponse.personName,
+            message: llmResponse.content
           });
           
-          // Add save prompt as a new message - without passing the function
           setMessages(prev => {
             console.log('Adding save prompt to messages');
             return [...prev, {
               role: 'assistant',
-              content: jsonResponse.savePrompt || 'Would you like to save this message?',
+              content: llmResponse.savePrompt || 'Would you like to save this message?',
               isSavePrompt: true
             }];
           });
-        } else {
+        } else if (llmResponse) {
           console.log('Message not marked for saving');
         }
       } catch (error) {
-        console.error('Failed to parse or handle JSON response:', {
+        console.error('Failed to parse or handle LLM response:', {
           error: error.message,
           data: data,
           content: data?.content
