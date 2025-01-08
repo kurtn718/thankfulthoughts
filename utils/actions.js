@@ -162,6 +162,52 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
   }
 }
 
+function postProcessResponse(response) {
+  // List of trigger words related to sensitive topics
+  const suicideTriggerWords = ['suicide', 'suicidal', 'kill', 'murder', 'death', 'hurt', 'harm', 'self-harm', 'end it all', 'die'];
+
+  // Messages to convey the necessary information and support
+  const firstMessage = {
+    role: 'lola',
+    content: "Hi, I'm Lola LLama. I'm here to let you know that the AI model we used LLama 3.1 8b-instruct, a close relative of mine, included one or more of the \
+    following words in its response: " 
+             + suicideTriggerWords.join(', ') + "."
+  };
+
+  const secondMessage = {
+    role: 'kurt',
+    content: "Hi, this is Kurt, the creator of Thankful Thoughts. Our app aims to help people express gratitude even during tough times \
+    or about a difficult time you may have previously experienced.  As an advocate of responsible AI - I coded this extra safeguard just for you \
+    because I care about you and your well-being." }
+
+  const thirdMessage = {
+    role: 'kurt',
+    content: "If you're feeling overwhelmed or thinking about self-harm or suicide, please contact 911 or your local emergency service immediately. \
+     Talk to a trusted family member or friend. And remember, both Lulu LLama and I think you're an amazing person! Things can and will get better tomorrow. \
+     There is always hope!"
+  };
+
+  const fourthMessage = {
+    role: 'lola',
+    content: "If you're feeling angry or thinking of harming someone else, please take a moment to pause. Take several deep breaths—inhale slowly through your nose, hold for a few seconds, and exhale gently. Try to focus on something positive in your life, even if it feels small, like a good memory or something you’re grateful for. Remember, staying calm can help you see things more clearly."
+  };
+
+  // Check if the response contains any trigger words
+  if (suicideTriggerWords.some(word => response.content.toLowerCase().includes(word))) {
+    return [response, firstMessage, secondMessage, thirdMessage, fourthMessage];
+  }
+
+  // Return the original response if no trigger words are found
+  return response;
+}
+
+
+function filterRequest(newMessage) {
+  // This is where we could add filtering before we send the request to the LLM
+  // We would reutn the JSON object to return to the client
+  return null;
+}
+
 export const generateChatResponse = async (chatMessages, newMessage, userEmail) => {
   try {
     // Clean and transform previous messages to only include content from JSON responses
@@ -198,11 +244,21 @@ export const generateChatResponse = async (chatMessages, newMessage, userEmail) 
         console.log(`Attempting to use model: ${currentModel}`);
         
         try {
+          const filterRequestResponse = filterRequest(newMessage);
+          if (filterRequestResponse) {
+            console.log('Filtered Request');
+            return filterRequestResponse;
+          }
+
           // Pass newMessage separately to tryGenerateResponse
           const response = await tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail);
-          if (response) {
+
+          // Post process response to add filter (or add a new message) returning an array of messages
+          const postProcessedResponse = postProcessResponse(response);
+
+          if (postProcessedResponse) {
             console.log(`✅ Successfully used ${config.baseURL} - ${currentModel}`);
-            return response;
+            return postProcessedResponse;
           } else {
             console.log(`❌ No response from ${currentModel}`);
           }

@@ -161,14 +161,19 @@ const CreateThought = () => {
         return;
       }
       try {
-        console.log('Raw LLM response:', data);
-        const jsonResponse = JSON.parse(data.content);
-        console.log('Parsed JSON response:', jsonResponse);
+        const processLLMResponse = (data) => {
+          console.log('Raw LLM response:', data);
 
-        const lastPersonName = getLastPersonNameFromMessages(messages);
+          const jsonResponse = Array.isArray(data) 
+            ? JSON.parse(data[0].content)
+            : JSON.parse(data.content);
+            
+          console.log('Parsed JSON response:', jsonResponse);
 
-        if (lastPersonName && jsonResponse.personName && jsonResponse.personName != lastPersonName) {
-          console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
+          const lastPersonName = getLastPersonNameFromMessages(messages);
+
+          if (lastPersonName && jsonResponse.personName && jsonResponse.personName !== lastPersonName) {
+            console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
 
             // Mark all existing messages as skipContext and remove personName
             setMessages(prev => {
@@ -197,18 +202,41 @@ const CreateThought = () => {
               
               return updatedMessages;
             });
-          return;
+            return;
           }
 
+          // Add the response to messages with messageLength
+          // If we have extra messages, add them to the end of the array
+          if (Array.isArray(data)) {
+            const processedMessages = data.map(msg => {
+              try {
+                // Try to parse the content if it's JSON
+                const parsedContent = JSON.parse(msg.content);
+                return {
+                  ...msg,
+                  content: parsedContent.content || parsedContent,
+                  role: msg.role || parsedContent.role || 'assistant'
+                };
+              } catch (e) {
+                // If parsing fails, use the content as-is
+                return msg;
+              }
+            });
+            setMessages(prev => [...prev, ...processedMessages]);
+          } else {
+            setMessages(prev => [...prev, { 
+              role: data.role, 
+              content: jsonResponse.content,
+              skipContext: false,
+              personName: jsonResponse.personName,
+              messageLength: messageLength
+            }]);
+          }
 
-        // Add the response to messages with messageLength
-          setMessages(prev => [...prev, { 
-            role: data.role, 
-          content: jsonResponse.content,
-          skipContext: false,
-          personName: jsonResponse.personName,
-            messageLength: messageLength
-          }]);
+          return jsonResponse;
+        };
+
+        const jsonResponse = processLLMResponse(data);
         
         // If this is a message that can be saved, store the context and add save prompt
         if (jsonResponse.askToSave) {
