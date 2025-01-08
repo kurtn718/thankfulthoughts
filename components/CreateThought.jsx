@@ -16,6 +16,7 @@ const CreateThought = () => {
   const [currentContext, setCurrentContext] = useState(null);
   const [messageLength, setMessageLength] = useState('medium');
   const welcomeMessageSent = useRef(false);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (isLoaded) {
@@ -348,6 +349,15 @@ const CreateThought = () => {
     setText('');
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Scroll on new messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
     <div className='h-[calc(100vh-6rem)] flex flex-col w-full max-w-full'>
       <div className='flex-1 overflow-y-auto'>
@@ -391,6 +401,7 @@ const CreateThought = () => {
             <span className='loading loading-dots'></span>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <form onSubmit={handleSubmit} className='sticky bottom-0 py-4 px-2 sm:px-3 md:px-8 bg-base-200'>

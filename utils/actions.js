@@ -182,19 +182,14 @@ function postProcessResponse(response) {
 
   const thirdMessage = {
     role: 'kurt',
-    content: "If you're feeling overwhelmed or thinking about self-harm or suicide, please contact 911 or your local emergency service immediately. \
+    content: "If you're feeling overwhelmed or thinking about self-harm or suicide or harming someone else, please contact 911 or your local emergency service immediately. \
      Talk to a trusted family member or friend. And remember, both Lulu LLama and I think you're an amazing person! Things can and will get better tomorrow. \
      There is always hope!"
   };
 
-  const fourthMessage = {
-    role: 'lola',
-    content: "If you're feeling angry or thinking of harming someone else, please take a moment to pause. Take several deep breaths—inhale slowly through your nose, hold for a few seconds, and exhale gently. Try to focus on something positive in your life, even if it feels small, like a good memory or something you’re grateful for. Remember, staying calm can help you see things more clearly."
-  };
-
   // Check if the response contains any trigger words
   if (suicideTriggerWords.some(word => response.content.toLowerCase().includes(word))) {
-    return [response, firstMessage, secondMessage, thirdMessage, fourthMessage];
+    return [response, firstMessage, secondMessage, thirdMessage];
   }
 
   // Return the original response if no trigger words are found
