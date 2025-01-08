@@ -17,6 +17,8 @@ const CreateThought = () => {
   const [messageLength, setMessageLength] = useState('medium');
   const welcomeMessageSent = useRef(false);
   const messagesEndRef = useRef(null);
+  const latestUserMessageRef = useRef(null);
+  const firstResponseRef = useRef(null);
 
   useEffect(() => {
     if (isLoaded) {
@@ -348,6 +350,83 @@ const CreateThought = () => {
     }
   };
 
+  // Helper to check if element is fully in viewport
+  const isElementVisible = (element) => {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+  };
+
+  // Helper to check if element is partially visible
+  const isElementPartiallyVisible = (element) => {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    return (
+      rect.top < windowHeight &&
+      rect.bottom > 0
+    );
+  };
+
+  // Helper to scroll to element
+  const scrollToElement = (element, options = {}) => {
+    if (!element) return false;
+    
+    const defaultOptions = {
+      behavior: "smooth",
+      block: "start", // Changed to 'start' to maximize visible content
+    };
+
+    element.scrollIntoView({ ...defaultOptions, ...options });
+    return true;
+  };
+
+  // Handle scroll after user input
+  const handleUserInputScroll = () => {
+    if (!latestUserMessageRef.current) return;
+    // Add a small delay to ensure DOM has updated
+    setTimeout(() => {
+      scrollToElement(latestUserMessageRef.current, { block: "center" });
+    }, 100);
+  };
+
+  // Handle scroll after response
+  const handleResponseScroll = () => {
+    const lastUserIndex = findLastUserMessageIndex(messages);
+    const firstResponseIndex = findFirstResponseIndex(messages, lastUserIndex);
+    
+    // Check if we have a user message and at least one response after it
+    const hasUserAndResponse = lastUserIndex !== -1 && firstResponseIndex < messages.length;
+
+    if (hasUserAndResponse && latestUserMessageRef.current) {
+      const userMessage = latestUserMessageRef.current;
+      const firstResponse = firstResponseRef.current;
+
+      // Add a small delay to ensure DOM has updated
+      setTimeout(() => {
+        // If first response exists but isn't fully visible, or there are more messages
+        if (firstResponse && 
+            (!isElementVisible(firstResponse) || messages.length > firstResponseIndex + 1)) {
+          
+          // If user message isn't fully visible, scroll to it first
+          if (!isElementPartiallyVisible(userMessage)) {
+            scrollToElement(userMessage, { block: "start" });
+          }
+          // Then try to show as much content as possible while keeping user message visible
+          else if (!isElementVisible(firstResponse)) {
+            scrollToElement(firstResponse, { block: "start" });
+          }
+        }
+      }, 100);
+    }
+  };
+
+  // Submit handler
   const handleSubmit = (e) => {
     e.preventDefault();
     const query = {
@@ -357,27 +436,55 @@ const CreateThought = () => {
     };
     setMessages((prev) => [...prev, query]);
     setPreviousText(text);
-    mutate(query);
     setText('');
+    mutate(query);
+    
+    // Scroll after user input
+    handleUserInputScroll();
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Scroll on new messages
+  // Scroll on new messages (responses)
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length === 0) return;
+    
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role !== 'user') {
+      handleResponseScroll();
+    }
   }, [messages]);
+
+  // Find the last user message index
+  const findLastUserMessageIndex = (messages) => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  // Find the first response after the last user message
+  const findFirstResponseIndex = (messages, lastUserIndex) => {
+    if (lastUserIndex === -1) return -1;
+    return lastUserIndex + 1;
+  };
 
   return (
     <div className='h-[calc(100vh-6rem)] flex flex-col w-full max-w-full'>
       <div className='flex-1 overflow-y-auto'>
         {messages.map(({ role, content, isSavePrompt }, index) => {
           const bcg = role === 'user' ? 'bg-base-200' : 'bg-base-100';
+          const isLastUserMessage = index === findLastUserMessageIndex(messages);
+          const isFirstResponse = index === findFirstResponseIndex(messages, findLastUserMessageIndex(messages));
+
           return (
             <div
               key={index}
+              ref={isLastUserMessage 
+                ? latestUserMessageRef 
+                : isFirstResponse 
+                  ? firstResponseRef 
+                  : null}
               className={`${bcg} flex py-4 md:py-6 px-3 md:px-8 text-base md:text-xl leading-loose border-b border-base-300`}
             >
               <span className='mr-6 flex items-center'>
@@ -413,7 +520,6 @@ const CreateThought = () => {
             <span className='loading loading-dots'></span>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       <form onSubmit={handleSubmit} className='sticky bottom-0 py-4 px-2 sm:px-3 md:px-8 bg-base-200'>
