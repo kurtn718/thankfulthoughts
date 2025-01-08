@@ -153,6 +153,83 @@ const CreateThought = () => {
   };
   
 
+  const processLLMResponse = (data, messages, previousText, messageLength, mutate) => {
+    console.log('Raw LLM response:', data);
+
+    const jsonResponse = Array.isArray(data) 
+      ? JSON.parse(data[0].content)
+      : JSON.parse(data.content);
+          
+    console.log('Parsed JSON response:', jsonResponse);
+
+    const lastPersonName = getLastPersonNameFromMessages(messages);
+
+    if (lastPersonName && jsonResponse.personName && jsonResponse.personName !== lastPersonName) {
+      console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
+
+      // Mark all existing messages as skipContext and remove personName
+      setMessages(prev => {
+        const updatedMessages = prev.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          skipContext: true,
+          messageLength: msg.messageLength,
+          ...(msg.isSavePrompt && { isSavePrompt: true })
+        }));
+        
+        // Create new query with the updated context and messageLength
+        const query = {
+          role: 'user',
+          content: previousText,
+          messageLength: messageLength
+        };
+        
+              // Wait for next tick to ensure state is updated
+        setTimeout(() => {
+          console.log('Resubmitting with updated context:', {
+            messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
+            totalMessages: updatedMessages.length,
+            messageLength: messageLength
+          });
+          mutate(query);
+        }, 0);
+        
+        return updatedMessages;
+      });
+      return;
+    }
+
+    // Add the response to messages with messageLength
+          // If we have extra messages, add them to the end of the array
+    if (Array.isArray(data)) {
+      const processedMessages = data.map(msg => {
+        try {
+                // Try to parse the content if it's JSON
+          const parsedContent = JSON.parse(msg.content);
+          return {
+            ...msg,
+            content: parsedContent.content || parsedContent,
+            role: msg.role || parsedContent.role || 'assistant'
+          };
+        } catch (e) {
+                // If parsing fails, use the content as-is
+          return msg;
+        }
+      });
+      setMessages(prev => [...prev, ...processedMessages]);
+    } else {
+      setMessages(prev => [...prev, { 
+        role: data.role, 
+        content: jsonResponse.content,
+        skipContext: false,
+        personName: jsonResponse.personName,
+        messageLength: messageLength
+      }]);
+    }
+
+    return jsonResponse;
+  };
+
   const { mutate, isPending } = useMutation({
     mutationFn: (query) => generateChatResponse(messages, query, user.emailAddresses[0]?.emailAddress),
     onSuccess: (data) => {
@@ -162,82 +239,7 @@ const CreateThought = () => {
         return;
       }
       try {
-        const processLLMResponse = (data) => {
-          console.log('Raw LLM response:', data);
-
-          const jsonResponse = Array.isArray(data) 
-            ? JSON.parse(data[0].content)
-            : JSON.parse(data.content);
-            
-          console.log('Parsed JSON response:', jsonResponse);
-
-          const lastPersonName = getLastPersonNameFromMessages(messages);
-
-          if (lastPersonName && jsonResponse.personName && jsonResponse.personName !== lastPersonName) {
-            console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
-
-            // Mark all existing messages as skipContext and remove personName
-            setMessages(prev => {
-              const updatedMessages = prev.map(msg => ({ 
-                ...msg, 
-                skipContext: true, 
-                personName: null 
-              }));
-              
-              // Create new query with the updated context and messageLength
-              const query = {
-                role: 'user',
-                content: previousText,
-                messageLength: messageLength
-              };
-              
-              // Wait for next tick to ensure state is updated
-              setTimeout(() => {
-                console.log('Resubmitting with updated context:', {
-                  messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
-                  totalMessages: updatedMessages.length,
-                  messageLength: messageLength
-                });
-                mutate(query);
-              }, 0);
-              
-              return updatedMessages;
-            });
-            return;
-          }
-
-          // Add the response to messages with messageLength
-          // If we have extra messages, add them to the end of the array
-          if (Array.isArray(data)) {
-            const processedMessages = data.map(msg => {
-              try {
-                // Try to parse the content if it's JSON
-                const parsedContent = JSON.parse(msg.content);
-                return {
-                  ...msg,
-                  content: parsedContent.content || parsedContent,
-                  role: msg.role || parsedContent.role || 'assistant'
-                };
-              } catch (e) {
-                // If parsing fails, use the content as-is
-                return msg;
-              }
-            });
-            setMessages(prev => [...prev, ...processedMessages]);
-          } else {
-            setMessages(prev => [...prev, { 
-              role: data.role, 
-              content: jsonResponse.content,
-              skipContext: false,
-              personName: jsonResponse.personName,
-              messageLength: messageLength
-            }]);
-          }
-
-          return jsonResponse;
-        };
-
-        const jsonResponse = processLLMResponse(data);
+        const jsonResponse = processLLMResponse(data, messages, previousText, messageLength, mutate);
         
         // If this is a message that can be saved, store the context and add save prompt
         if (jsonResponse.askToSave) {
