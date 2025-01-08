@@ -5,9 +5,10 @@ import { useMutation } from '@tanstack/react-query';
 import { generateChatResponse } from '@/utils/actions';
 import { saveThought } from '@/utils/db-utils';
 import { useUser } from '@clerk/nextjs';
+import Avatar from './Avatar';
 
 const CreateThought = () => {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [text, setText] = useState('');
   const [previousText, setPreviousText] = useState('');
   const [messages, setMessages] = useState([]);
@@ -17,7 +18,61 @@ const CreateThought = () => {
   const welcomeMessageSent = useRef(false);
 
   useEffect(() => {
-    if (welcomeMessageSent.current) return;
+    if (isLoaded) {
+      console.log('User data loaded:', {
+        isLoaded,
+        user: user,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        fullName: user?.fullName,
+      });
+    }
+  }, [isLoaded, user]);
+
+  const getSpecialWelcomeMessage = (firstName, lastName) => {
+    if (!firstName || !lastName) return null;
+    
+    const welcomeMessages = [
+      { 
+        firstName: 'Matt', 
+        lastName: 'Wilkey', 
+        message: "Matt, this is President-Elect Trump - let me be clear—this team thrives on loyalty, on respect, and, frankly, on recognizing greatness when you see it. I didn't hear enough praise about me, Matt. Not nearly enough. And for that... you're fired!", 
+        role: 'trump' 
+      },
+      { 
+        firstName: 'Matthew', 
+        lastName: 'Wilkey', 
+        message: "Matt, this is President-Elect Trump - let me be clear—this team thrives on loyalty, on respect, and, frankly, on recognizing greatness when you see it. I didn't hear enough praise about me, Matt. Not nearly enough. And for that... you're fired!", 
+        role: 'trump' 
+      },
+      { 
+        firstName: 'Kurt', 
+        lastName: 'Niemi', 
+        message: 'Kurt, this is President-Elect Trump - I want to hire you for your Generative AI expertise!', 
+        role: 'trump' 
+      },
+      { 
+        firstName: 'Natasha', 
+        lastName: 'Usher', 
+        message: 'Natasha, this is Felix. Your husband hired me to say hello to you - and we both agree that you are awesome!', 
+        role: 'felix'
+      }
+    ];
+
+    const welcomeMessage = welcomeMessages.find(person => 
+      person.firstName === firstName && 
+      person.lastName === lastName
+    );
+
+    return welcomeMessage ? {
+      role: welcomeMessage.role,
+      content: welcomeMessage.message,
+      skipContext: true
+    } : null;
+  };
+
+  useEffect(() => {
+    if (!isLoaded || welcomeMessageSent.current) return;
     
     const welcomeQuery = {
       role: 'user',
@@ -35,8 +90,20 @@ const CreateThought = () => {
         if (response) {
           try {
             const jsonResponse = JSON.parse(response.content);
+
+            // Only proceed with special welcome message if user data is loaded
+            const specialWelcome = isLoaded && user ? 
+              getSpecialWelcomeMessage(user.firstName, user.lastName) : 
+              null;
+
             setMessages(prev => {
               if (prev.length === 0) {
+                if (specialWelcome) {
+                  return [
+                    { role: 'assistant', content: jsonResponse.content }, 
+                    specialWelcome
+                  ];
+                }
                 return [{ role: 'assistant', content: jsonResponse.content }];
               }
               return prev;
@@ -49,7 +116,7 @@ const CreateThought = () => {
       .finally(() => {
         setIsLoadingWelcome(false);
       });
-  }, []);
+  }, [isLoaded, user]);
 
   const getLastPersonNameFromMessages = (messages) => {
     console.log('*** Messages:', messages);
@@ -103,45 +170,46 @@ const CreateThought = () => {
         if (lastPersonName && jsonResponse.personName && jsonResponse.personName != lastPersonName) {
           console.log('*** New person:', jsonResponse.personName, 'vs', lastPersonName);
 
-          // Mark all existing messages as skipContext and remove personName
-          setMessages(prev => {
-            const updatedMessages = prev.map(msg => ({ 
-              ...msg, 
-              skipContext: true, 
-              personName: null 
-            }));
-            
-            // Create new query with the updated context and messageLength
-            const query = {
-              role: 'user',
-              content: previousText,
-              messageLength: messageLength
-            };
-            
-            // Wait for next tick to ensure state is updated
-            setTimeout(() => {
-              console.log('Resubmitting with updated context:', {
-                messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
-                totalMessages: updatedMessages.length,
+            // Mark all existing messages as skipContext and remove personName
+            setMessages(prev => {
+              const updatedMessages = prev.map(msg => ({ 
+                ...msg, 
+                skipContext: true, 
+                personName: null 
+              }));
+              
+              // Create new query with the updated context and messageLength
+              const query = {
+                role: 'user',
+                content: previousText,
                 messageLength: messageLength
-              });
-              mutate(query);
-            }, 0);
-            
-            return updatedMessages;
-          });
+              };
+              
+              // Wait for next tick to ensure state is updated
+              setTimeout(() => {
+                console.log('Resubmitting with updated context:', {
+                  messagesWithSkipContext: updatedMessages.filter(m => m.skipContext).length,
+                  totalMessages: updatedMessages.length,
+                  messageLength: messageLength
+                });
+                mutate(query);
+              }, 0);
+              
+              return updatedMessages;
+            });
           return;
-        }
-        
+          }
+
+
         // Add the response to messages with messageLength
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
+          setMessages(prev => [...prev, { 
+            role: data.role, 
           content: jsonResponse.content,
           skipContext: false,
           personName: jsonResponse.personName,
-          messageLength: messageLength
-        }]);
-
+            messageLength: messageLength
+          }]);
+        
         // If this is a message that can be saved, store the context and add save prompt
         if (jsonResponse.askToSave) {
           console.log('Save prompt triggered:', {
@@ -256,14 +324,15 @@ const CreateThought = () => {
     <div className='h-[calc(100vh-6rem)] flex flex-col w-full max-w-full'>
       <div className='flex-1 overflow-y-auto'>
         {messages.map(({ role, content, isSavePrompt }, index) => {
-          const avatar = role == 'user' ? '👤' : '🤖';
-          const bcg = role == 'user' ? 'bg-base-200' : 'bg-base-100';
+          const bcg = role === 'user' ? 'bg-base-200' : 'bg-base-100';
           return (
             <div
               key={index}
               className={`${bcg} flex py-4 md:py-6 px-3 md:px-8 text-base md:text-xl leading-loose border-b border-base-300`}
             >
-              <span className='mr-4'>{avatar}</span>
+              <span className='mr-6 flex items-center'>
+                <Avatar role={role} />
+              </span>
               <div className='flex-1'>
                 <p className='break-words'>{content}</p>
                 {isSavePrompt && (
@@ -288,7 +357,9 @@ const CreateThought = () => {
         })}
         {(isPending || isLoadingWelcome) && (
           <div className='flex py-6 px-3 md:px-8'>
-            <span className='mr-4'>🤖</span>
+            <span className='mr-6'>
+              <Avatar role="assistant" />
+            </span>
             <span className='loading loading-dots'></span>
           </div>
         )}
