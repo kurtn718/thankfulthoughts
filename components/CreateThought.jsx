@@ -6,6 +6,7 @@ import { generateChatResponse } from '@/utils/actions';
 import { saveThought } from '@/utils/db-utils';
 import { useUser } from '@clerk/nextjs';
 import Avatar from './Avatar';
+import { welcomeMessages } from '@/utils/welcome-messages';
 
 const CreateThought = () => {
   const { user, isLoaded } = useUser();
@@ -35,36 +36,18 @@ const CreateThought = () => {
   const getSpecialWelcomeMessage = (firstName, lastName) => {
     if (!firstName || !lastName) return null;
     
-    const welcomeMessages = [
-      { 
-        firstName: 'Matt', 
-        lastName: 'Wilkey', 
-        message: "Matt, this is President-Elect Trump - let me be clear—this team thrives on loyalty, on respect, and, frankly, on recognizing greatness when you see it. I didn't hear enough praise about me, Matt. Not nearly enough. And for that... you're fired!", 
-        role: 'trump' 
-      },
-      { 
-        firstName: 'Matthew', 
-        lastName: 'Wilkey', 
-        message: "Matt, this is President-Elect Trump - let me be clear—this team thrives on loyalty, on respect, and, frankly, on recognizing greatness when you see it. I didn't hear enough praise about me, Matt. Not nearly enough. And for that... you're fired!", 
-        role: 'trump' 
-      },
-      { 
-        firstName: 'Kurt', 
-        lastName: 'Niemi', 
-        message: 'Kurt, this is President-Elect Trump - I want to hire you for your Generative AI expertise!', 
-        role: 'trump' 
-      },
-      { 
-        firstName: 'Natasha', 
-        lastName: 'Usher', 
-        message: 'Natasha, this is Felix. Your husband hired me to say hello to you - and we both agree that you are awesome!', 
-        role: 'felix'
+    // Helper function to match names with wildcards
+    const matchesName = (pattern, name) => {
+      if (pattern.endsWith('*')) {
+        const prefix = pattern.slice(0, -1);
+        return name.startsWith(prefix);
       }
-    ];
+      return pattern === name;
+    };
 
     const welcomeMessage = welcomeMessages.find(person => 
-      person.firstName === firstName && 
-      person.lastName === lastName
+      matchesName(person.firstName, firstName) && 
+      matchesName(person.lastName, lastName)
     );
 
     return welcomeMessage ? {
