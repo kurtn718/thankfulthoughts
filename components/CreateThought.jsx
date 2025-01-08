@@ -487,11 +487,11 @@ const CreateThought = () => {
                   : null}
               className={`${bcg} flex py-4 md:py-6 px-3 md:px-8 text-base md:text-xl leading-loose border-b border-base-300`}
             >
-              <span className='mr-6 flex items-center'>
+              <span className='mr-6 pt-1'>
                 <Avatar role={role} />
               </span>
               <div className='flex-1'>
-                <p className='break-words'>{content}</p>
+                <p className='break-words whitespace-pre-line'>{content}</p>
                 {isSavePrompt && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button 

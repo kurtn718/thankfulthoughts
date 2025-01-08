@@ -170,24 +170,30 @@ function postProcessResponse(response) {
   // Messages to convey the necessary information and support
   const firstMessage = {
     role: 'lola',
-    content: "Hi, I'm Lola LLama. I supervise the output of my fellow LLama AI models. \
-    The response from the AI included one or more of the following words in its response: " 
-             + suicideTriggerWords.join(', ') + ". While I am trusting of the safeguards in the AI \
-             , I want you to take a moment and remember you are awesome! Even though you might see this exact \
-             same response if you continue on harmful or hurtful topics - it is true.  You really are awesome! \
-             Please don't give up on yourself.  You are loved and you are important."
+    content: `Hi, I'm Lola LLama. I supervise the output of my fellow LLama AI models.\n\n` +
+             `The response from the AI included one or more of these concerning words:\n` +
+             `${suicideTriggerWords.join(', ')}\n\n` +
+             `While I trust the AI's safeguards in giving an appropriate response, I want you to take a moment and remember something: ` +
+             `You are awesome!\n\n` +
+             `Please don't give up on yourself. You are loved and you are important.`
+  };
+
+  const secondMessage = {
+    role: 'kurt',
+    content: `Hi, this is Kurt, the creator of Thankful Thoughts.\n\n` +
+             `If you're feeling overwhelmed or thinking about self-harm, suicide, or harming someone else:\n` +
+             `• Contact 911 or your local emergency service immediately\n` +
+             `• Talk to a trusted family member or friend\n\n` +
+             `Remember, both Lola LLama and I think you're an amazing person!\n` +
+             `Things can and will get better tomorrow. There is always hope!`
   };
 
   const thirdMessage = {
     role: 'kurt',
-    content: "Our app aims to help people express gratitude even during tough times \
-    or about a difficult time you may have previously experienced.  If you really are trying to thank somebody - try entering in 'they helped me, please thank them'" }
-
-  const secondMessage = {
-    role: 'kurt',
-    content: "Hi, this is Kurt, the creator of Thankful Thoughts. If you're feeling overwhelmed or thinking about self-harm or suicide or harming someone else, please contact 911 or your local emergency service immediately. \
-     Talk to a trusted family member or friend. And remember, both Lulu LLama and I think you're an amazing person! Things can and will get better tomorrow. \
-     There is always hope!"
+    content: `Our app aims to help people express gratitude even during tough times ` +
+             `or about a difficult time you may have previously experienced.\n\n` +
+             `If you're trying to thank somebody, try entering something like:\n` +
+             `"Bob helped me, please thank them"`
   };
 
   // Check if the response contains any trigger words
