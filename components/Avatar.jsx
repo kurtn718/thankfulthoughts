@@ -8,6 +8,8 @@ const Avatar = ({ role }) => {
     felix: '/avatars/felix.png',
     kurt: '/avatars/kurt.png',
     lola: '/avatars/lola-llama.png',
+    hulk: '/avatars/hulk.png',
+    babytiger: '/avatars/babytiger.png',
     // Add more roles as needed
   };
 
