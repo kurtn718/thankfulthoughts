@@ -196,11 +196,13 @@ function postProcessResponse(response) {
              `"Bob helped me, please thank them"`
   };
 
-  // Check if the response contains any trigger words
-  if (suicideTriggerWords.some(word => response.content.toLowerCase().includes(word))) {
-    return [response, firstMessage, secondMessage, thirdMessage];
-  }
-
+  if (response.content) {
+    // Create a regex to match whole words, case-insensitive
+    const regex = new RegExp(`\\b(${suicideTriggerWords.join('|')})\\b`, 'i');
+    if (regex.test(response.content)) {
+        return [response, firstMessage, secondMessage, thirdMessage];
+    }
+  } 
   // Return the original response if no trigger words are found
   return response;
 }

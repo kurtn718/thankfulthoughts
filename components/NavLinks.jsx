@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 const links = [
   {
-    name: 'Create Thought',
+    name: 'Thought Composer',
     href: '/createthought',
   }, 
   {
