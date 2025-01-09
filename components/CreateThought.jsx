@@ -509,14 +509,14 @@ const CreateThought = () => {
           </div>
 
           <div className='flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2'>
-            <label className='text-xs sm:text-sm text-gray-500 whitespace-nowrap'>Message Length:</label>
+            <label className='text-xs sm:text-sm text-base-content/70 whitespace-nowrap'>Message Length:</label>
             <div className="btn-group shadow-md">
               <button
                 type="button"
                 className={`btn btn-sm border transition-all
                   ${messageLength === 'short' 
-                    ? 'bg-gradient-to-b from-slate-50 to-slate-200 border-slate-300 shadow-inner' 
-                    : 'bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200'}`}
+                    ? 'bg-base-200 border-base-300 shadow-inner' 
+                    : 'bg-base-100 hover:bg-base-200'}`}
                 onClick={() => setMessageLength('short')}
               >
                 Short
@@ -525,8 +525,8 @@ const CreateThought = () => {
                 type="button"
                 className={`btn btn-sm border transition-all
                   ${messageLength === 'medium' 
-                    ? 'bg-gradient-to-b from-slate-50 to-slate-200 border-slate-300 shadow-inner' 
-                    : 'bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200'}`}
+                    ? 'bg-base-200 border-base-300 shadow-inner' 
+                    : 'bg-base-100 hover:bg-base-200'}`}
                 onClick={() => setMessageLength('medium')}
               >
                 Medium
@@ -535,8 +535,8 @@ const CreateThought = () => {
                 type="button"
                 className={`btn btn-sm border transition-all
                   ${messageLength === 'long' 
-                    ? 'bg-gradient-to-b from-slate-50 to-slate-200 border-slate-300 shadow-inner' 
-                    : 'bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200'}`}
+                    ? 'bg-base-200 border-base-300 shadow-inner' 
+                    : 'bg-base-100 hover:bg-base-200'}`}
                 onClick={() => setMessageLength('long')}
               >
                 Long
