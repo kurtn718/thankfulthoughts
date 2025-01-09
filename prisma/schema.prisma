@@ -36,4 +36,18 @@ model SavedThought {
 
   @@index([userId])
   @@map("saved_thoughts")
+}
+
+model WelcomeThought {
+  id            String   @id @default(cuid())
+  senderUserId  String
+  firstName     String
+  lastName      String
+  email         String?
+  role          String
+  message       String   @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([firstName, lastName])
 } 

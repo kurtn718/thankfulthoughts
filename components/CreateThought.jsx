@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useMutation } from '@tanstack/react-query';
 import { generateChatResponse } from '@/utils/actions';
-import { saveThought } from '@/utils/db-utils';
+import { saveThought, getWelcomeThought } from '@/utils/db-utils';
 import { useUser } from '@clerk/nextjs';
 import Avatar from './Avatar';
 import { welcomeMessages } from '@/utils/welcome-messages';
@@ -33,28 +33,9 @@ const CreateThought = () => {
     }
   }, [isLoaded, user]);
 
-  const getSpecialWelcomeMessage = (firstName, lastName) => {
+  const getSpecialWelcomeMessage = async (firstName, lastName) => {
     if (!firstName || !lastName) return null;
-    
-    // Helper function to match names with wildcards
-    const matchesName = (pattern, name) => {
-      if (pattern.endsWith('*')) {
-        const prefix = pattern.slice(0, -1);
-        return name.startsWith(prefix);
-      }
-      return pattern === name;
-    };
-
-    const welcomeMessage = welcomeMessages.find(person => 
-      matchesName(person.firstName, firstName) && 
-      matchesName(person.lastName, lastName)
-    );
-
-    return welcomeMessage ? {
-      role: welcomeMessage.role,
-      content: welcomeMessage.message,
-      skipContext: true
-    } : null;
+    return await getWelcomeThought(firstName, lastName);
   };
 
   useEffect(() => {
@@ -71,37 +52,38 @@ const CreateThought = () => {
     
     welcomeMessageSent.current = true;
     
-    generateChatResponse([], welcomeQuery, "hello@thankful-thoughts.com")
-      .then((response) => {
+    const fetchWelcomeMessages = async () => {
+      try {
+        const response = await generateChatResponse([], welcomeQuery, "hello@thankful-thoughts.com");
         if (response) {
-          try {
-            const jsonResponse = JSON.parse(response.content);
+          const jsonResponse = JSON.parse(response.content);
 
-            // Only proceed with special welcome message if user data is loaded
-            const specialWelcome = isLoaded && user ? 
-              getSpecialWelcomeMessage(user.firstName, user.lastName) : 
-              null;
+          // Only proceed with special welcome message if user data is loaded
+          const specialWelcome = isLoaded && user ? 
+            await getSpecialWelcomeMessage(user.firstName, user.lastName) : 
+            null;
 
-            setMessages(prev => {
-              if (prev.length === 0) {
-                if (specialWelcome) {
-                  return [
-                    { role: 'assistant', content: jsonResponse.content }, 
-                    specialWelcome
-                  ];
-                }
-                return [{ role: 'assistant', content: jsonResponse.content }];
+          setMessages(prev => {
+            if (prev.length === 0) {
+              if (specialWelcome) {
+                return [
+                  { role: 'assistant', content: jsonResponse.content }, 
+                  specialWelcome
+                ];
               }
-              return prev;
-            });
-          } catch (error) {
-            console.error('Failed to parse JSON response:', error);
-          }
+              return [{ role: 'assistant', content: jsonResponse.content }];
+            }
+            return prev;
+          });
         }
-      })
-      .finally(() => {
+      } catch (error) {
+        console.error('Failed to fetch welcome messages:', error);
+      } finally {
         setIsLoadingWelcome(false);
-      });
+      }
+    };
+
+    fetchWelcomeMessages();
   }, [isLoaded, user]);
 
   const getLastPersonNameFromMessages = (messages) => {

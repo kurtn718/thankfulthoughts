@@ -39,3 +39,6 @@ next-env.d.ts
 # IDE specific files
 .vscode/
 .idea/ 
+
+# utils
+utils/welcome-messages.js 

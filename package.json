@@ -10,7 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "prisma:seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.2",

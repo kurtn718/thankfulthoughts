@@ -1,6 +1,7 @@
 'use server';
 
 import prisma from './db';
+import { welcomeMessages } from '@/utils/welcome-messages';
 
 async function ensureUserExists(clerkId, { email, firstName, lastName }) {
   try {
@@ -164,5 +165,74 @@ export async function getThoughtsByUserId(clerkId) {
       error: 'Failed to fetch thoughts',
       details: error.message
     };
+  }
+}
+
+export async function initializeWelcomeThoughts() {
+  const count = await prisma.welcomeThought.count();
+  
+  if (count === 0) {
+    console.log('Initializing welcome thoughts from file...');
+    
+    try {
+      const thoughts = welcomeMessages.map(msg => ({
+        senderUserId: 'system',  // or specific user ID
+        firstName: msg.firstName,
+        lastName: msg.lastName,
+        email: msg.email || null,
+        role: msg.role,
+        message: msg.message
+      }));
+
+      await prisma.welcomeThought.createMany({
+        data: thoughts
+      });
+
+      console.log(`Successfully initialized ${thoughts.length} welcome thoughts`);
+    } catch (error) {
+      console.error('Failed to initialize welcome thoughts:', error);
+    }
+  }
+}
+
+export async function getWelcomeThought(firstName, lastName) {
+  // Helper function to match names with wildcards
+  const matchesName = (pattern, name) => {
+    if (pattern.endsWith('*')) {
+      const prefix = pattern.slice(0, -1);
+      return name.startsWith(prefix);
+    }
+    return pattern === name;
+  };
+
+  try {
+    const welcomeThoughts = await prisma.welcomeThought.findMany({
+      where: {
+        OR: [
+          { firstName: firstName },
+          { firstName: firstName + '*' },
+          { firstName: { startsWith: firstName } }
+        ],
+        lastName: lastName
+      }
+    });
+
+    const match = welcomeThoughts.find(thought => 
+      matchesName(thought.firstName, firstName) && 
+      thought.lastName === lastName
+    );
+
+    if (match) {
+      return {
+        role: match.role,
+        content: match.message,
+        skipContext: true
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch welcome thought:', error);
+    return null;
   }
 } 
