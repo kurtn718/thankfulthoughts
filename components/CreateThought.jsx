@@ -6,7 +6,6 @@ import { generateChatResponse } from '@/utils/actions';
 import { saveThought, getWelcomeThought } from '@/utils/db-utils';
 import { useUser } from '@clerk/nextjs';
 import Avatar from './Avatar';
-import { welcomeMessages } from '@/utils/welcome-messages';
 
 const CreateThought = () => {
   const { user, isLoaded } = useUser();
