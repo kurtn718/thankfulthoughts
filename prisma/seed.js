@@ -4,9 +4,15 @@ const { welcomeMessages } = require('../utils/welcome-messages');
 const prisma = new PrismaClient();
 
 async function main() {
-  const count = await prisma.welcomeThought.count();
+  console.log('Starting seed process...');
   
-  if (count === 0) {
+  try {
+    // First, delete all existing records
+    console.log('Cleaning existing welcome thoughts...');
+    await prisma.welcomeThought.deleteMany({});
+    console.log('Successfully cleared welcome thoughts table');
+
+    // Then seed with new data
     console.log('Seeding welcome thoughts...');
     
     const thoughts = welcomeMessages.map(msg => {
@@ -31,15 +37,17 @@ async function main() {
       return;
     }
 
+    console.log(`Preparing to seed ${thoughts.length} thoughts`);
     console.log('First thought example:', thoughts[0]);
 
     await prisma.welcomeThought.createMany({
       data: thoughts
     });
 
-    console.log(`Seeded ${thoughts.length} welcome thoughts`);
-  } else {
-    console.log('Welcome thoughts already exist, skipping seed');
+    console.log(`Successfully seeded ${thoughts.length} welcome thoughts`);
+  } catch (error) {
+    console.error('Seed failed:', error);
+    throw error;
   }
 }
 
