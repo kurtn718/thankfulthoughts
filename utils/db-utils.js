@@ -4,37 +4,75 @@ import prisma from './db';
 
 async function ensureUserExists(clerkId, { email, firstName, lastName }) {
   try {
+    // First try to find by clerkId
     let user = await prisma.user.findUnique({
       where: { clerkId }
     });
 
-    if (!user) {
-      console.log(`Creating new user record for Clerk ID: ${clerkId}`, {
+    if (user) {
+      // User exists with this clerkId - update their details if needed
+      if (user.email !== email || user.firstName !== firstName || user.lastName !== lastName) {
+        user = await prisma.user.update({
+          where: { clerkId },
+          data: {
+            email,
+            firstName: firstName || null,
+            lastName: lastName || null,
+          }
+        });
+      }
+      return user;
+    }
+
+    // No user with this clerkId - check if email exists
+    const existingUserWithEmail = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUserWithEmail) {
+      console.warn('Email collision detected:', {
         email,
-        firstName,
-        lastName
+        existingClerkId: existingUserWithEmail.clerkId,
+        newClerkId: clerkId
       });
-      
+
+      // Create user with a modified email to maintain uniqueness
       user = await prisma.user.create({
         data: {
           clerkId,
-          email,
+          email: `${email}.${clerkId.slice(0, 8)}`, // Append part of clerkId to email
           firstName: firstName || null,
           lastName: lastName || null,
         }
       });
-      console.log(`Created user: ${JSON.stringify(user)}`);
+
+      // Log the incident for monitoring
+      console.log('Created user with modified email:', {
+        originalEmail: email,
+        modifiedEmail: user.email,
+        clerkId
+      });
+
+      return user;
     }
+
+    // Normal case - create new user
+    user = await prisma.user.create({
+      data: {
+        clerkId,
+        email,
+        firstName: firstName || null,
+        lastName: lastName || null,
+      }
+    });
 
     return user;
   } catch (error) {
-    console.error('Error ensuring user exists:', {
+    console.error('Error in ensureUserExists:', {
       error: error.message,
       code: error.code,
       clerkId,
-      email,
-      firstName,
-      lastName,
+      email: email?.slice(0, 3) + '***', // Log partial email for privacy
       stack: error.stack
     });
     throw error;
