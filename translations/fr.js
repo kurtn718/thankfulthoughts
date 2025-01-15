@@ -23,5 +23,10 @@ export default {
     title: 'Pensées Reconnaissantes',
     description: 'Exprimez votre gratitude sans effort grâce à l\'assistance de l\'IA. Créez des messages de remerciement sincères qui transmettent véritablement votre appréciation.',
     getStarted: 'Commencer'
+  },
+  savePrompt: {
+    message: 'Voulez-vous sauvegarder ce message ?',
+    save: 'Oui, sauvegarder',
+    cancel: 'Non, merci'
   }
 }; 

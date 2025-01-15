@@ -242,7 +242,7 @@ const CreateThought = () => {
             console.log('Adding save prompt to messages');
             return [...prev, {
               role: 'assistant',
-              content: llmResponse.savePrompt || 'Would you like to save this message?',
+              content: t('savePrompt.message'),
               isSavePrompt: true
             }];
           });
@@ -476,13 +476,13 @@ const CreateThought = () => {
                       onClick={handleSave}
                       className="btn btn-primary btn-sm"
                     >
-                      Yes, save this message
+                      {t('savePrompt.save')}
                     </button>
                     <button 
                       onClick={() => setMessages(prev => prev.slice(0, -1))}
                       className="btn btn-ghost btn-sm"
                     >
-                      No, thanks
+                      {t('savePrompt.cancel')}
                     </button>
                   </div>
                 )}

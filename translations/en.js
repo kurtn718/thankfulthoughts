@@ -27,5 +27,10 @@ export default {
     title: 'Thankful Thoughts',
     description: 'Express gratitude effortlessly with AI-powered assistance. Create heartfelt thank you messages that truly convey your appreciation.',
     getStarted: 'Get Started'
+  },
+  savePrompt: {
+    message: 'Would you like to save this message?',
+    save: 'Yes, save this message',
+    cancel: 'No, thanks'
   }
 }; 

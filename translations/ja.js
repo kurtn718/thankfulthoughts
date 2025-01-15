@@ -27,5 +27,10 @@ export default {
     title: 'ありがとうメーカー',
     description: 'AIの支援により、簡単に感謝の気持ちを表現できます。心からの感謝の気持ちを込めたメッセージを作成しましょう。',
     getStarted: '始める'
+  },
+  savePrompt: {
+    message: 'このメッセージを保存しますか？',
+    save: 'はい、保存します',
+    cancel: 'いいえ、結構です'
   }
 }; 

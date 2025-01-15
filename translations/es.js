@@ -27,5 +27,10 @@ export default {
     title: 'Pensamientos Agradecidos',
     description: 'Expresa gratitud sin esfuerzo con la ayuda de la AI. Crea mensajes de agradecimiento sinceros que transmitan verdaderamente tu aprecio.',
     getStarted: 'Comenzar'
+  },
+  savePrompt: {
+    message: '¿Te gustaría guardar este mensaje?',
+    save: 'Sí, guardar mensaje',
+    cancel: 'No, gracias'
   }
 }; 
