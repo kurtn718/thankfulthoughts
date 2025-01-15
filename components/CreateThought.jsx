@@ -6,8 +6,10 @@ import { generateChatResponse } from '@/utils/actions';
 import { saveThought, getWelcomeThought } from '@/utils/db-utils';
 import { useUser } from '@clerk/nextjs';
 import Avatar from './Avatar';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const CreateThought = () => {
+  const { t } = useTranslation();
   const { user, isLoaded } = useUser();
   const [text, setText] = useState('');
   const [previousText, setPreviousText] = useState('');
@@ -433,6 +435,13 @@ const CreateThought = () => {
     return lastUserIndex + 1;
   };
 
+  // Define message length options with their display values
+  const messageLengthOptions = [
+    { value: 'short', label: t('createThought.short') },
+    { value: 'medium', label: t('createThought.medium') },
+    { value: 'long', label: t('createThought.long') }
+  ];
+
   return (
     <div className='h-[calc(100vh-6rem)] flex flex-col w-full max-w-full'>
       <div className='flex-1 overflow-y-auto'>
@@ -491,7 +500,7 @@ const CreateThought = () => {
           <div className='join w-full gap-1 sm:gap-2'>
             <input
               type='text'
-              placeholder='Message Thankful Thoughts'
+              placeholder={t('createThought.placeholder')}
               className='input input-bordered join-item flex-1 px-2 sm:px-3 py-4 min-w-0'
               value={text}
               required
@@ -503,43 +512,28 @@ const CreateThought = () => {
               type='submit' 
               disabled={isPending || isLoadingWelcome}
             >
-              {isPending || isLoadingWelcome ? 'Loading...' : 'Create'}
+              {isPending || isLoadingWelcome ? t('createThought.loading') : t('createThought.createButton')}
             </button>
           </div>
 
           <div className='flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2'>
-            <label className='text-xs sm:text-sm text-base-content/70 whitespace-nowrap'>Message Length:</label>
+            <label className='text-xs sm:text-sm text-base-content/80 whitespace-nowrap'>
+              {t('createThought.messageLengthLabel')}
+            </label>
             <div className="btn-group shadow-md">
-              <button
-                type="button"
-                className={`btn btn-sm border transition-all
-                  ${messageLength === 'short' 
-                    ? 'bg-base-200 border-base-300 shadow-inner' 
-                    : 'bg-base-100 hover:bg-base-200'}`}
-                onClick={() => setMessageLength('short')}
-              >
-                Short
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm border transition-all
-                  ${messageLength === 'medium' 
-                    ? 'bg-base-200 border-base-300 shadow-inner' 
-                    : 'bg-base-100 hover:bg-base-200'}`}
-                onClick={() => setMessageLength('medium')}
-              >
-                Medium
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm border transition-all
-                  ${messageLength === 'long' 
-                    ? 'bg-base-200 border-base-300 shadow-inner' 
-                    : 'bg-base-100 hover:bg-base-200'}`}
-                onClick={() => setMessageLength('long')}
-              >
-                Long
-              </button>
+              {messageLengthOptions.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`btn btn-sm border transition-all
+                    ${messageLength === value 
+                      ? 'bg-base-200 border-base-300 shadow-inner' 
+                      : 'bg-base-100 hover:bg-base-200'}`}
+                  onClick={() => setMessageLength(value)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

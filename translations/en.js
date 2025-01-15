@@ -13,7 +13,11 @@ export default {
     messageLengthLabel: 'Message Length:',
     short: 'Short',
     medium: 'Medium',
-    long: 'Long'
+    long: 'Long',
+    messageInput: {
+      placeholder: 'Enter your message here...',
+      label: 'Message'
+    }
   },
   errors: {
     generic: 'Something went wrong! Please try again.',

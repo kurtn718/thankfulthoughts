@@ -2,8 +2,10 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import en from '@/translations/en';
 import es from '@/translations/es';
+import ja from '@/translations/ja';
+import fr from '@/translations/fr';
 
-const translations = { en, es };
+const translations = { en, es, ja, fr };
 
 export function useTranslation() {
   const { locale, setLocale } = useLanguage();

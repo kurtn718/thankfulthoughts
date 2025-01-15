@@ -1,13 +1,21 @@
-import { SiOpenaigym } from 'react-icons/si';
+'use client';
+
 import ThemeToggle from './ThemeToggle';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const SidebarHeader = () => {
+  const { t } = useTranslation();
+  
   return (
-    <div className='flex items-center mb-4 gap-4 px-4'>
-      <SiOpenaigym className='w-10 h-10 text-primary' />
-      <h2 className='text-xl font-extrabold text-primary mr-auto'>Thankful Thoughts</h2>
+    <div className="flex items-center p-4">
+      <div className="flex-1">
+        <h1 className="text-xl font-semibold">
+          {t('home.title')}
+        </h1>
+      </div>
       <ThemeToggle />
     </div>
   );
 };
+
 export default SidebarHeader;

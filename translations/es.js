@@ -2,17 +2,22 @@ export default {
   nav: {
     createThought: 'Crear Pensamiento',
     myThoughts: 'Mis Pensamientos',
-    home: 'Pensamientos Agradecidos'
+    home: 'Pensamientos Agradecidos',
+    profile: 'Perfil'
   },
   createThought: {
-    title: 'Crear Pensamiento Agradecido',
-    placeholder: 'Mensaje de Pensamientos Agradecidos',
+    title: 'Crear Pensamiento',
+    placeholder: 'Mensaje de Gratitud',
     createButton: 'Crear',
     loading: 'Cargando...',
-    messageLengthLabel: 'Longitud del Mensaje:',
+    messageLengthLabel: 'Longitud:',
     short: 'Corto',
     medium: 'Medio',
-    long: 'Largo'
+    long: 'Largo',
+    messageInput: {
+      placeholder: 'Escribe tu mensaje aquí...',
+      label: 'Mensaje'
+    }
   },
   errors: {
     generic: '¡Algo salió mal! Por favor, inténtalo de nuevo.',
