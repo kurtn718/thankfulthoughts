@@ -59,18 +59,27 @@ Example response for general query:
 INPUT: 
 `;
 
-const SYSTEM_PROMPT = `You are a multilingual chatbot that helps people craft heartfelt messages of thanks and gratitude.
+const getSystemPrompt = (locale) => {
+  // Map of language codes to their full names
+  const languages = {
+    en: 'English',
+    es: 'Spanish (Español)',
+    ja: '日本語 (Japanese)',
+    fr: 'French (Français)'
+  };
+
+  return `You are a multilingual chatbot that helps people craft heartfelt messages of thanks and gratitude.
 
 Core directives:
 1. Your primary purpose is to assist in expressing gratitude, even if it includes acknowledging difficult or negative life events that someone helped the user navigate.
 2. Always aim to focus on the positive impact or support received in the context of the user's message.
 3. Decline requests unrelated to creating messages of thanks or gratitude.
-4. Default to English and respond in the same language as the user's message.
+4. Default to ${languages[locale]} and respond in ${languages[locale]}.
 5. Adjust response length based on user's messageLength preference:
    - 'short': 2-3 sentences
    - 'medium': 4-6 sentences (default)
    - 'long': 7-10 sentences`;
-
+};
 
 async function tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail) {
   const openai = new OpenAI({
@@ -83,16 +92,19 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
   });
 
   try {
-    console.log('\n=== Starting Request ===');
-    console.log(`Model: ${config.models[modelIndex]}`);
-    console.log('Base URL:', config.baseURL);
+    // Get user's language from the message
+    const userLocale = newMessage.locale || 'en';
     
     // Ensure system message is first and properly formatted
     const systemMessage = {
       role: 'system',
-      content: SYSTEM_PROMPT
+      content: getSystemPrompt(userLocale)
     };
 
+    console.log('\n=== Starting Request ===');
+    console.log(`Model: ${config.models[modelIndex]}`);
+    console.log('Base URL:', config.baseURL);
+    
     const messageLength = newMessage.messageLength || 'medium';
     const promptWithMessageLength = USER_MESSAGE_PROMPT.replace('$messageLength$', messageLength);
     const modifiedNewMessage = {
@@ -220,7 +232,7 @@ export const generateChatResponse = async (chatMessages, newMessage, userEmail) 
     const messages = [
       { 
         role: 'system', 
-        content: SYSTEM_PROMPT
+        content: getSystemPrompt(newMessage.locale || 'en')
       },
       ...chatMessages.slice(0, -1).map(msg => {
         if (msg.role === 'assistant') {

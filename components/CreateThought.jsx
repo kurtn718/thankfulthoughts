@@ -9,7 +9,7 @@ import Avatar from './Avatar';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const CreateThought = () => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { user, isLoaded } = useUser();
   const [text, setText] = useState('');
   const [previousText, setPreviousText] = useState('');
@@ -44,11 +44,12 @@ const CreateThought = () => {
     
     const welcomeQuery = {
       role: 'user',
-      content: `Generate a friendly welcome message with these key points:
+      content: `Generate a friendly welcome message in ${locale === 'en' ? 'English' : locale === 'es' ? 'Spanish' : locale === 'ja' ? 'Japanese' : 'French'} with these key points:
         1. Explain that the user only has to specify the name of the person they want to send a message to
         and anything special or details they want to include.
         2. Keep the tone friendly and inviting, but concise. `,
-      messageLength: 'medium'
+      messageLength: 'medium',
+      locale: locale
     };
     
     welcomeMessageSent.current = true;
@@ -85,7 +86,7 @@ const CreateThought = () => {
     };
 
     fetchWelcomeMessages();
-  }, [isLoaded, user]);
+  }, [isLoaded, user, locale]);
 
   const getLastPersonNameFromMessages = (messages) => {
     console.log('*** Messages:', messages);
@@ -210,7 +211,11 @@ const CreateThought = () => {
   };
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (query) => generateChatResponse(messages, query, user.emailAddresses[0]?.emailAddress),
+    mutationFn: (query) => generateChatResponse(
+      messages, 
+      { ...query, locale },
+      user?.emailAddresses[0]?.emailAddress
+    ),
     onSuccess: (data) => {
       if (!data) {
         console.error('No data returned from mutation');
