@@ -13,11 +13,7 @@ export default {
     messageLengthLabel: 'Longitud:',
     short: 'Corto',
     medium: 'Medio',
-    long: 'Largo',
-    messageInput: {
-      placeholder: 'Escribe tu mensaje aquí...',
-      label: 'Mensaje'
-    }
+    long: 'Largo'
   },
   errors: {
     generic: '¡Algo salió mal! Por favor, inténtalo de nuevo.',
@@ -32,5 +28,41 @@ export default {
     message: '¿Te gustaría guardar este mensaje?',
     save: 'Sí, guardar mensaje',
     cancel: 'No, gracias'
+  },
+  savedThoughts: {
+    title: 'Pensamientos Guardados',
+    empty: 'Aún no hay pensamientos guardados',
+    loading: 'Cargando tus pensamientos...',
+    error: 'Error al cargar los pensamientos',
+    deletePrompt: {
+      title: '¿Eliminar Pensamiento?',
+      message: '¿Estás seguro de que quieres eliminar este pensamiento?',
+      confirm: 'Sí, eliminar',
+      cancel: 'Cancelar'
+    },
+    card: {
+      to: 'Para',
+      created: 'Creado'
+    },
+    message: 'Mensaje',
+    actions: {
+      edit: 'Editar',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      delete: 'Eliminar'
+    },
+    search: {
+      placeholder: 'Buscar pensamientos...',
+      noResults: 'No se encontraron pensamientos',
+      adjustSearch: 'Intenta ajustar tus términos de búsqueda'
+    },
+    signIn: {
+      title: 'Hola',
+      message: 'Por favor, inicia sesión para ver tus pensamientos guardados.',
+      button: 'Iniciar Sesión'
+    },
+    createNew: 'Crear Nuevo',
+    createFirst: '¡Comienza creando tu primer pensamiento de gratitud!',
+    createButton: 'Crear Pensamiento'
   }
 }; 

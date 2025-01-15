@@ -5,9 +5,12 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import debounce from 'lodash/debounce';
+import { useTranslation } from '@/hooks/useTranslation';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
 // Create a separate component for the search functionality
 function ThoughtsList() {
+  const { t, locale } = useTranslation();
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,6 +29,7 @@ function ThoughtsList() {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [editingThought, setEditingThought] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   const fetchThoughts = useCallback(async (page = 1, search = '') => {
     if (!user) return;
@@ -103,10 +107,13 @@ function ThoughtsList() {
 
   // Handle deletion
   const handleDelete = async (thoughtId) => {
-    if (!confirm('Are you sure you want to delete this thought?')) return;
+    setDeleteId(thoughtId);
+  };
 
+  // Add confirmDelete handler
+  const confirmDelete = async () => {
     try {
-      const response = await fetch(`/api/savedthoughts?id=${thoughtId}`, {
+      const response = await fetch(`/api/savedthoughts?id=${deleteId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -116,14 +123,15 @@ function ThoughtsList() {
       const result = await response.json();
 
       if (!result.success) {
-        alert('Failed to delete thought');
+        alert(t('savedThoughts.error'));
         return;
       }
 
-      // Refresh the current page
       fetchThoughts(state.pagination.currentPage, searchTerm);
     } catch (error) {
-      alert('Failed to delete thought');
+      alert(t('savedThoughts.error'));
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -160,6 +168,15 @@ function ThoughtsList() {
     }
   };
 
+  // Format date according to locale
+  const formatDate = (date) => {
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(new Date(date));
+  };
+
   useEffect(() => {
     if (isLoaded && user) {
       fetchThoughts(1, searchParams.get('search') || '');
@@ -179,10 +196,10 @@ function ThoughtsList() {
       <div className="hero min-h-[50vh] bg-base-200">
         <div className="hero-content text-center">
           <div className="max-w-md">
-            <h1 className="text-5xl font-bold">Hello there</h1>
-            <p className="py-6">Please sign in to view your saved thoughts.</p>
+            <h1 className="text-5xl font-bold">{t('savedThoughts.signIn.title')}</h1>
+            <p className="py-6">{t('savedThoughts.signIn.message')}</p>
             <Link href="/sign-in" className="btn btn-primary">
-              Sign In
+              {t('savedThoughts.signIn.button')}
             </Link>
           </div>
         </div>
@@ -197,7 +214,7 @@ function ThoughtsList() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <div>
-          <h3 className="font-bold">Error!</h3>
+          <h3 className="font-bold">{t('savedThoughts.error')}!</h3>
           <div className="text-xs">{state.error}</div>
         </div>
       </div>
@@ -208,17 +225,17 @@ function ThoughtsList() {
     <div className="space-y-6">
       {/* Header with Search */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-3xl font-bold">Your Saved Thoughts</h1>
+        <h1 className="text-3xl font-bold">{t('savedThoughts.title')}</h1>
         <div className="flex gap-4 w-full md:w-auto">
           <input
             type="search"
-            placeholder="Search thoughts..."
+            placeholder={t('savedThoughts.search.placeholder')}
             className="input input-bordered w-full md:w-80"
             value={searchTerm}
             onChange={handleSearch}
           />
           <Link href="/createthought" className="btn btn-primary whitespace-nowrap">
-            Create New
+            {t('savedThoughts.createNew')}
           </Link>
         </div>
       </div>
@@ -229,16 +246,16 @@ function ThoughtsList() {
           <div className="hero-content text-center">
             <div className="max-w-md">
               <h2 className="text-2xl font-bold">
-                {searchTerm ? 'No matching thoughts found' : 'No thoughts yet'}
+                {searchTerm ? t('savedThoughts.search.noResults') : t('savedThoughts.empty')}
               </h2>
               <p className="py-6">
                 {searchTerm 
-                  ? 'Try adjusting your search terms'
-                  : 'Start by creating your first thankful thought!'}
+                  ? t('savedThoughts.search.adjustSearch')
+                  : t('savedThoughts.createFirst')}
               </p>
               {!searchTerm && (
                 <Link href="/createthought" className="btn btn-primary">
-                  Create Thought
+                  {t('savedThoughts.createButton')}
                 </Link>
               )}
             </div>
@@ -265,7 +282,7 @@ function ThoughtsList() {
                     >
                       <div>
                         <label className="label">
-                          <span className="label-text">To:</span>
+                          <span className="label-text">{t('savedThoughts.card.to')}:</span>
                         </label>
                         <input
                           type="text"
@@ -277,7 +294,7 @@ function ThoughtsList() {
                       </div>
                       <div>
                         <label className="label">
-                          <span className="label-text">Message:</span>
+                          <span className="label-text">{t('savedThoughts.message')}:</span>
                         </label>
                         <textarea
                           name="message"
@@ -292,37 +309,37 @@ function ThoughtsList() {
                           className="btn btn-ghost btn-sm"
                           onClick={() => setEditingThought(null)}
                         >
-                          Cancel
+                          {t('savedThoughts.actions.cancel')}
                         </button>
                         <button
                           type="submit"
                           className="btn btn-primary btn-sm"
                         >
-                          Save
+                          {t('savedThoughts.actions.save')}
                         </button>
                       </div>
                     </form>
                   ) : (
                     // View Mode
                     <>
-                      <h2 className="card-title">To: {thought.personName}</h2>
+                      <h2 className="card-title">{t('savedThoughts.card.to')}: {thought.personName}</h2>
                       <p className="whitespace-pre-wrap">{thought.message}</p>
                       <div className="card-actions justify-between items-center mt-4">
                         <div className="text-sm opacity-70">
-                          {new Date(thought.createdAt).toLocaleDateString()}
+                          {formatDate(thought.createdAt)}
                         </div>
                         <div className="flex gap-2">
                           <button 
                             className="btn btn-ghost btn-sm"
                             onClick={() => setEditingThought(thought.id)}
                           >
-                            Edit
+                            {t('savedThoughts.actions.edit')}
                           </button>
                           <button 
                             className="btn btn-ghost btn-sm text-error"
                             onClick={() => handleDelete(thought.id)}
                           >
-                            Delete
+                            {t('savedThoughts.actions.delete')}
                           </button>
                         </div>
                       </div>
@@ -353,6 +370,12 @@ function ThoughtsList() {
           )}
         </>
       )}
+
+      <DeleteConfirmModal 
+        isOpen={deleteId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

@@ -28,5 +28,43 @@ export default {
     message: 'Voulez-vous sauvegarder ce message ?',
     save: 'Oui, sauvegarder',
     cancel: 'Non, merci'
+  },
+  savedThoughts: {
+    title: 'Pensées Sauvegardées',
+    empty: 'Aucune pensée sauvegardée',
+    loading: 'Chargement de vos pensées...',
+    error: 'Erreur de chargement',
+    deletePrompt: {
+      title: 'Supprimer la Pensée ?',
+      message: 'Êtes-vous sûr de vouloir supprimer cette pensée ?',
+      confirm: 'Oui, supprimer',
+      cancel: 'Annuler'
+    },
+    card: {
+      to: 'À',
+      created: 'Créé le',
+      message: 'Message',
+      actions: {
+        delete: 'Supprimer',
+        archive: 'Archiver',
+        edit: 'Modifier',
+        save: 'Enregistrer',
+        cancel: 'Annuler'
+      }
+    },
+    search: {
+      placeholder: 'Rechercher des pensées...',
+      noResults: 'Aucune pensée trouvée',
+      clearButton: 'Effacer la recherche',
+      adjustSearch: 'Essayez de modifier vos termes de recherche'
+    },
+    signIn: {
+      title: 'Bonjour',
+      message: 'Veuillez vous connecter pour voir vos pensées sauvegardées.',
+      button: 'Se Connecter'
+    },
+    createNew: 'Créer Nouveau',
+    createFirst: 'Commencez par créer votre première pensée de gratitude !',
+    createButton: 'Créer une Pensée'
   }
 }; 
