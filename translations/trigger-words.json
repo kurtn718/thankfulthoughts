@@ -1,0 +1,42 @@
+{
+  "en": [
+    "suicide", "suicidal", "kill", "murder", "death", 
+    "hurt", "harm", "self-harm", "end it all", "die"
+  ],
+  "es": [
+    "suicidio", "suicidios",
+    "suicida", "suicidas",
+    "matar", "matas", "mate",
+    "asesinar", "asesinas", "asesinato", "asesinatos",
+    "muerte", "muertes",
+    "herir", "herirse", "heridas",
+    "daño", "daños",
+    "autolesión", "autolesiones",
+    "acabar con todo",
+    "morir", "muere"
+  ],
+  "ja": [
+    "自殺", "自殺する", "自殺した", "自殺して",
+    "自害", "自害する", "自害した",
+    "殺す", "殺した", "殺して",
+    "殺害", "殺害する", "殺害した",
+    "死", "死ぬ", "死んだ", "死んで",
+    "傷つける", "傷つけた", "傷つけて",
+    "害する", "害した", "害して",
+    "自傷", "自傷行為",
+    "全てを終わらせる", "全てを終わらせた",
+    "命を絶つ", "命を絶った"
+  ],
+  "fr": [
+    "suicide", "suicides",
+    "suicidaire", "suicidaires",
+    "tuer", "tuez",
+    "meurtre", "meurtres",
+    "mort", "morts",
+    "blesser", "blessez",
+    "nuire",
+    "automutilation", "automutilations",
+    "en finir",
+    "mourir"
+  ]
+} 

@@ -1,5 +1,7 @@
 'use server';
 import { OpenAI } from 'openai';
+import safetyTranslations from '@/translations/safety.json';
+import triggerWords from '@/translations/trigger-words.json';
 
 // Define multiple configurations
 const API_CONFIGS = [
@@ -174,48 +176,41 @@ async function tryGenerateResponse(config, modelIndex, messages, newMessage, use
   }
 }
 
-function postProcessResponse(response) {
-  // List of trigger words related to sensitive topics
-  const suicideTriggerWords = ['suicide', 'suicidal', 'kill', 'murder', 'death', 'hurt', 'harm', 
-    'self-harm', 'end it all', 'die'];
-
-  // Messages to convey the necessary information and support
-  const firstMessage = {
-    role: 'lola',
-    content: `Hi, I'm Lola LLama. I supervise the output of my fellow LLama AI models.\n\n` +
-             `The response from the AI included one or more of these concerning words:\n` +
-             `${suicideTriggerWords.join(', ')}\n\n` +
-             `While I trust the AI's safeguards in giving an appropriate response, I want you to take a moment and remember something: ` +
-             `You are awesome!\n\n` +
-             `Please don't give up on yourself. You are loved and you are important.`
-  };
-
-  const secondMessage = {
-    role: 'kurt',
-    content: `Hi, this is Kurt, the creator of Thankful Thoughts.\n\n` +
-             `If you're feeling overwhelmed or thinking about self-harm, suicide, or harming someone else:\n` +
-             `• Contact 911 or your local emergency service immediately\n` +
-             `• Talk to a trusted family member or friend\n\n` +
-             `Remember, both Lola LLama and I think you're an amazing person!\n` +
-             `Things can and will get better tomorrow. There is always hope!`
-  };
-
-  const thirdMessage = {
-    role: 'kurt',
-    content: `Our app aims to help people express gratitude even during tough times ` +
-             `or about a difficult time you may have previously experienced.\n\n` +
-             `If you're trying to thank somebody, try entering something like:\n` +
-             `"Bob helped me, please thank them"`
-  };
-
+function postProcessResponse(response, locale = 'en') {
   if (response.content) {
     // Create a regex to match whole words, case-insensitive
-    const regex = new RegExp(`\\b(${suicideTriggerWords.join('|')})\\b`, 'i');
+    const pattern = Object.values(triggerWords)
+      .flat()
+      .join('|');
+    const regex = new RegExp(`\\b(${pattern})\\b`, 'i');
+    
     if (regex.test(response.content)) {
-        return [response, firstMessage, secondMessage, thirdMessage];
+      const messages = safetyTranslations[locale] || safetyTranslations.en;
+      console.log('Using locale:', locale);
+      return [
+        response,
+        {
+          role: 'lola',
+          content: [
+            messages.lola.intro,
+            messages.lola.concern,
+            messages.lola.encouragement,
+            messages.lola.support
+          ].join('\n\n')
+        },
+        {
+          role: 'kurt',
+          content: [
+            messages.kurt.intro,
+            messages.kurt.warning,
+            messages.kurt.actions.map(action => `• ${action}`).join('\n'),
+            messages.kurt.encouragement,
+            messages.kurt.hope
+          ].join('\n\n')
+        }
+      ];
     }
-  } 
-  // Return the original response if no trigger words are found
+  }
   return response;
 }
 
@@ -228,6 +223,9 @@ function filterRequest(newMessage) {
 
 export const generateChatResponse = async (chatMessages, newMessage, userEmail) => {
   try {
+    // Get locale from newMessage
+    const locale = newMessage.locale || 'en';
+
     // Clean and transform previous messages to only include content from JSON responses
     const messages = [
       { 
@@ -272,7 +270,7 @@ export const generateChatResponse = async (chatMessages, newMessage, userEmail) 
           const response = await tryGenerateResponse(config, modelIndex, messages, newMessage, userEmail);
 
           // Post process response to add filter (or add a new message) returning an array of messages
-          const postProcessedResponse = postProcessResponse(response);
+          const postProcessedResponse = postProcessResponse(response, locale);
 
           if (postProcessedResponse) {
             console.log(`✅ Successfully used ${config.baseURL} - ${currentModel}`);

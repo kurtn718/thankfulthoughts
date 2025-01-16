@@ -1,0 +1,74 @@
+{
+  "en": {
+    "lola": {
+      "intro": "Hi, I'm Lola LLama. I supervise the output of my fellow LLama AI models.",
+      "concern": "The response from the AI included one or more concerning words.",
+      "encouragement": "While I trust the AI's safeguards in giving an appropriate response, I want you to take a moment and remember something: You are awesome!",
+      "support": "Please don't give up on yourself. You are loved and you are important."
+    },
+    "kurt": {
+      "intro": "Hi, this is Kurt, the creator of Thankful Thoughts.",
+      "warning": "If you're feeling overwhelmed or thinking about self-harm, suicide, or harming someone else:",
+      "actions": [
+        "Contact emergency services (911 in US) immediately",
+        "Talk to a trusted family member or friend"
+      ],
+      "encouragement": "Remember, both Lola LLama and I think you're an amazing person!",
+      "hope": "Things can and will get better tomorrow. There is always hope!"
+    }
+  },
+  "es": {
+    "lola": {
+      "intro": "Hola, soy Lola LLama. Superviso la salida de mis compañeros modelos LLama AI.",
+      "concern": "La respuesta de la IA incluyó una o más palabras preocupantes.",
+      "encouragement": "Aunque confío en las medidas de seguridad de la IA para dar una respuesta apropiada, quiero que te tomes un momento y recuerdes algo: ¡Eres increíble!",
+      "support": "Por favor, no te rindas. Eres amado y eres importante."
+    },
+    "kurt": {
+      "intro": "Hola, soy Kurt, el creador de Pensamientos Agradecidos.",
+      "warning": "Si te sientes abrumado o piensas en autolesionarte, suicidarte o dañar a alguien más:",
+      "actions": [
+        "Contacta a los servicios de emergencia (911 en EE.UU., según tu país) inmediatamente",
+        "Habla con un familiar o amigo de confianza"
+      ],
+      "encouragement": "¡Recuerda, tanto Lola LLama como yo pensamos que eres una persona increíble!",
+      "hope": "Las cosas pueden y van a mejorar mañana. ¡Siempre hay esperanza!"
+    }
+  },
+  "ja": {
+    "lola": {
+      "intro": "こんにちは、ロラ・ラマです。私は仲間のラマAIモデルの出力を監督しています。",
+      "concern": "AIの応答に気になる言葉が含まれていました。",
+      "encouragement": "AIの安全対策は信頼していますが、ここで一つ覚えておいてほしいことがあります：あなたは素晴らしい人です！",
+      "support": "どうか諦めないでください。あなたは愛されており、大切な存在です。"
+    },
+    "kurt": {
+      "intro": "こんにちは、サンクフル・ソーツの作者のカートです。",
+      "warning": "もし圧倒されていたり、自傷行為や自殺、他人を傷つけることを考えているなら：",
+      "actions": [
+        "緊急サービスに連絡してください（米国では911、日本では119/110）",
+        "信頼できる家族や友人に相談してください"
+      ],
+      "encouragement": "覚えていてください、ロラ・ラマも私もあなたのことを素晴らしい人だと思っています！",
+      "hope": "明日はきっと良くなります。必ず希望はあります！"
+    }
+  },
+  "fr": {
+    "lola": {
+      "intro": "Bonjour, je suis Lola LLama. Je supervise les réponses de mes collègues modèles LLama AI.",
+      "concern": "La réponse de l'IA contenait un ou plusieurs mots préoccupants.",
+      "encouragement": "Bien que je fasse confiance aux mesures de sécurité de l'IA pour donner une réponse appropriée, je veux que vous preniez un moment pour vous rappeler quelque chose : Vous êtes formidable !",
+      "support": "S'il vous plaît, n'abandonnez pas. Vous êtes aimé et vous êtes important."
+    },
+    "kurt": {
+      "intro": "Bonjour, je suis Kurt, le créateur de Pensées Reconnaissantes.",
+      "warning": "Si vous vous sentez dépassé ou si vous pensez à vous faire du mal, au suicide, ou à blesser quelqu'un d'autre :",
+      "actions": [
+        "Contactez les services d'urgence (911 aux États-Unis, 15/112 en France) immédiatement",
+        "Parlez à un membre de votre famille ou à un ami de confiance"
+      ],
+      "encouragement": "Rappelez-vous, Lola LLama et moi pensons que vous êtes une personne extraordinaire !",
+      "hope": "Les choses peuvent et vont s'améliorer demain. Il y a toujours de l'espoir !"
+    }
+  }
+} 
